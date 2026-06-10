@@ -1,0 +1,37 @@
+from dataclasses import dataclass
+from pathlib import Path
+import os
+
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+
+@dataclass(frozen=True)
+class Settings:
+    app_name: str = "SLT Defect Detection API"
+    data_dir: Path = Path(os.getenv("SLT_DATA_DIR", BASE_DIR / "data"))
+    max_upload_bytes: int = int(os.getenv("SLT_MAX_UPLOAD_BYTES", str(10 * 1024 * 1024)))
+    classifier_backend: str = os.getenv("SLT_CLASSIFIER_BACKEND", "granite")
+    classifier_fallback_enabled: bool = os.getenv("SLT_CLASSIFIER_FALLBACK", "true").lower() in {
+        "1",
+        "true",
+        "yes",
+    }
+    granite_model_id: str = os.getenv("SLT_GRANITE_MODEL_ID", "ibm-granite/granite-vision-3.2-2b")
+    granite_trust_remote_code: bool = os.getenv("SLT_GRANITE_TRUST_REMOTE_CODE", "false").lower() in {
+        "1",
+        "true",
+        "yes",
+    }
+    granite_max_new_tokens: int = int(os.getenv("SLT_GRANITE_MAX_NEW_TOKENS", "8"))
+
+    @property
+    def upload_dir(self) -> Path:
+        return self.data_dir / "uploads"
+
+    @property
+    def db_path(self) -> Path:
+        return self.data_dir / "defect_reports.sqlite3"
+
+
+settings = Settings()

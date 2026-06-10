@@ -1,0 +1,10 @@
+-r requirements.txt
+
+# Optional local VLM backend for IBM Granite Vision.
+# Install PyTorch separately before this file. On this Windows CPU setup:
+#   pip install torch==2.6.0 --index-url https://download.pytorch.org/whl/cpu
+# Keeping torch out of this file prevents pip from selecting a wheel that fails
+# to load torch\lib\c10.dll in the project venv.
+transformers>=4.49,<5
+accelerate>=1.0.0
+huggingface-hub>=0.28.0
