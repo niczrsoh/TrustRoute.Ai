@@ -75,6 +75,12 @@ Maximum image size:
   "explanation": "Dark high-contrast edge patterns were strongest in the image.",
   "item_type": "cardboard parcel",
   "damage_location": "front-left corner",
+  "shipment_hash": "0x...",
+  "evidence_hash": "0x...",
+  "image_hash": "0x...",
+  "confidence_bps": 7120,
+  "defect_type_chain_id": 1,
+  "detected_at_unix": 1781071050,
   "image_path": "uploads/6f3d9f1a2a5f4f24a7f19b1c36f574a9.jpg",
   "timestamp": "2026-06-10T05:17:30.038162+00:00"
 }
@@ -84,14 +90,35 @@ Maximum image size:
 
 | API Field | Suggested Mobile Display |
 | --- | --- |
-| `defect_type` | Main result label: `Normal`, `Crack`, `Dent`, or `Leakage` |
+| `defect_type` | Main result label returned by Granite Vision, for example `normal`, `crushed_package`, `torn_box`, or `scratched_car` |
 | `confidence` | Confidence percentage, for example `71.2%` |
 | `shipment_id` | Shipment/report reference |
 | `timestamp` | Inspection time |
 | `explanation` | Short supporting message |
 | `item_type` | Optional item description detected by the VLM |
 | `damage_location` | Optional visible location of the defect |
+| `shipment_hash` | Ethereum Keccak hash of the shipment ID |
+| `evidence_hash` | Ethereum Keccak hash of the important report proof |
+| `image_hash` | SHA-256 hash of the uploaded image bytes |
+| `confidence_bps` | Confidence for smart contract, where `10000` means `100%` |
+| `defect_type_chain_id` | Smart contract enum value; unknown/freeform labels map to `4` |
 | `scores` | Optional debug/details view |
+
+## GET /reports/{report_id}/blockchain
+
+Returns the exact compact payload needed for the smart contract `anchorReport` call.
+
+```json
+{
+  "report_id": 4,
+  "contract_function": "anchorReport",
+  "shipment_hash": "0x...",
+  "evidence_hash": "0x...",
+  "defect_type_chain_id": 3,
+  "confidence_bps": 8351,
+  "detected_at_unix": 1781071050
+}
+```
 
 ## GET /reports
 
@@ -115,11 +142,13 @@ Returns one saved report by ID.
 
 ## GET /classes
 
-Returns supported labels:
+Granite Vision uses dynamic labels, so this endpoint returns no fixed class list:
 
 ```json
 {
-  "classes": ["normal", "crack", "dent", "leakage"]
+  "classes": [],
+  "mode": "dynamic",
+  "note": "Granite Vision returns a freeform visible-condition label instead of fixed defect classes."
 }
 ```
 

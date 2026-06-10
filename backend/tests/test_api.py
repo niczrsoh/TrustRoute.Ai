@@ -41,12 +41,34 @@ def test_predict_stores_report() -> None:
         assert response.status_code == 200
         payload = response.json()
         assert payload["shipment_id"] == "SHIP-TEST-001"
-        assert payload["defect_type"] in {"normal", "crack", "dent", "leakage"}
+        assert isinstance(payload["defect_type"], str)
+        assert payload["defect_type"]
         assert 0 <= payload["confidence"] <= 1
+        assert 0 <= payload["confidence_bps"] <= 10000
+        assert payload["shipment_hash"].startswith("0x")
+        assert payload["evidence_hash"].startswith("0x")
+        assert payload["image_hash"].startswith("0x")
         assert payload["scores"]
 
         reports = client.get("/reports").json()
         assert any(report["id"] == payload["id"] for report in reports)
+
+        blockchain_payload = client.get(f"/reports/{payload['id']}/blockchain").json()
+        assert blockchain_payload["contract_function"] == "anchorReport"
+        assert blockchain_payload["shipment_hash"] == payload["shipment_hash"]
+        assert blockchain_payload["evidence_hash"] == payload["evidence_hash"]
+        assert blockchain_payload["defect_type_chain_id"] == payload["defect_type_chain_id"]
+        assert blockchain_payload["confidence_bps"] == payload["confidence_bps"]
+
+
+def test_classes_are_dynamic_for_granite_labels() -> None:
+    with TestClient(app) as client:
+        response = client.get("/classes")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["classes"] == []
+    assert payload["mode"] == "dynamic"
 
 
 def test_rejects_non_image_extension() -> None:

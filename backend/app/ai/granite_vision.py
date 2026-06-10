@@ -8,17 +8,15 @@ from typing import Any
 
 from PIL import Image, ImageOps
 
-from .inference import DEFECT_CLASSES, Prediction
+from .inference import Prediction
 
 
 GRANITE_DEFECT_PROMPT = """
 Inspect the delivered item for visible damage.
-Reply with exactly one label only:
-normal, crack, dent, or leakage.
-normal=no visible defect.
-crack=crack/split/fracture/broken.
-dent=deformation/crushed/bent/impact.
-leakage=liquid/stain/wet/spill.
+Reply with exactly one short condition label only.
+Do not choose from predefined classes.
+Use your own concise label based on what is visible.
+Examples: normal, crushed_package, torn_box, wet_package, broken_glass, scratched_car, dented_panel, leaked_liquid.
 """.strip()
 
 
@@ -175,24 +173,11 @@ class GraniteVisionClassifier:
     def _normalize_defect_type(value: str) -> str:
         normalized = value.strip().lower().replace(" ", "_").replace("-", "_")
         normalized = normalized.strip("`'\".,:;()[]{}")
-        for class_name in DEFECT_CLASSES:
-            if re.search(rf"\b{re.escape(class_name)}\b", normalized):
-                return class_name
-        aliases = {
-            "none": "normal",
-            "no_defect": "normal",
-            "ok": "normal",
-            "damaged": "dent",
-            "deformation": "dent",
-            "crushed": "dent",
-            "wet": "leakage",
-            "stain": "leakage",
-            "spillage": "leakage",
-            "broken": "crack",
-            "fracture": "crack",
-        }
-        normalized = aliases.get(normalized, normalized)
-        return normalized if normalized in DEFECT_CLASSES else "normal"
+        normalized = re.sub(r"[^a-z0-9_]+", "_", normalized)
+        normalized = re.sub(r"_+", "_", normalized).strip("_")
+        if not normalized:
+            return "unknown_condition"
+        return normalized[:64]
 
     @staticmethod
     def _clamp_float(value: Any) -> float:
@@ -213,16 +198,11 @@ class GraniteVisionClassifier:
 
     @staticmethod
     def _scores_from_label(defect_type: str, confidence: float) -> dict[str, float]:
-        remaining = max(0.0, 1.0 - confidence)
-        other_score = round(remaining / (len(DEFECT_CLASSES) - 1), 4)
-        return {
-            class_name: round(confidence, 4) if class_name == defect_type else other_score
-            for class_name in DEFECT_CLASSES
-        }
+        return {defect_type: round(confidence, 4)}
 
     @staticmethod
     def _default_explanation(defect_type: str, item_type: str | None) -> str:
         subject = item_type or "delivered item"
         if defect_type == "normal":
-            return f"No visible crack, dent, or leakage was found on the {subject}."
-        return f"The {subject} appears to show visible {defect_type} damage."
+            return f"No visible damage was found on the {subject}."
+        return f"The {subject} appears to show visible condition: {defect_type}."

@@ -16,8 +16,8 @@ def test_granite_parser_normalizes_json_result() -> None:
         """
     )
 
-    assert prediction.defect_type == "dent"
+    assert prediction.defect_type == "crushed"
     assert prediction.confidence == 0.81
     assert prediction.item_type == "cardboard parcel"
     assert prediction.damage_location == "front-left corner"
-    assert prediction.scores["dent"] == 0.81
+    assert prediction.scores["crushed"] == 0.81
