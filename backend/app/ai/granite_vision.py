@@ -12,11 +12,11 @@ from .inference import DEFECT_CLASSES, Prediction
 
 
 GRANITE_DEFECT_PROMPT = """
-Inspect the delivered item for visible damage.
+Carefully inspect the entire image for any visible damage. If there are multiple items and ANY of them are damaged, you MUST report the damage instead of normal.
 Reply with exactly one label only:
 normal, crack, dent, or leakage.
-normal=no visible defect.
-crack=crack/split/fracture/broken.
+normal=no visible defect in the entire image.
+crack=crack/split/fracture/broken pieces.
 dent=deformation/crushed/bent/impact.
 leakage=liquid/stain/wet/spill.
 """.strip()
@@ -59,7 +59,12 @@ class GraniteVisionClassifier:
             ) from exc
 
         self._torch = torch
-        self._device = "cuda" if torch.cuda.is_available() else "cpu"
+        if torch.cuda.is_available():
+            self._device = "cuda"
+        elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+            self._device = "mps"
+        else:
+            self._device = "cpu"
         self._processor = AutoProcessor.from_pretrained(
             self.model_id,
             trust_remote_code=self.trust_remote_code,
@@ -67,7 +72,12 @@ class GraniteVisionClassifier:
         if hasattr(self._processor, "tokenizer"):
             self._processor.tokenizer.padding_side = "left"
 
-        dtype = torch.bfloat16 if self._device == "cuda" else torch.float32
+        if self._device == "cuda":
+            dtype = torch.bfloat16
+        elif self._device == "mps":
+            dtype = torch.float16
+        else:
+            dtype = torch.float32
         try:
             self._model = AutoModel.from_pretrained(
                 self.model_id,
@@ -174,25 +184,29 @@ class GraniteVisionClassifier:
     @staticmethod
     def _normalize_defect_type(value: str) -> str:
         normalized = value.strip().lower().replace(" ", "_").replace("-", "_")
-        normalized = normalized.strip("`'\".,:;()[]{}")
-        for class_name in DEFECT_CLASSES:
-            if re.search(rf"\b{re.escape(class_name)}\b", normalized):
-                return class_name
+
         aliases = {
-            "none": "normal",
-            "no_defect": "normal",
-            "ok": "normal",
-            "damaged": "dent",
-            "deformation": "dent",
-            "crushed": "dent",
-            "wet": "leakage",
-            "stain": "leakage",
-            "spillage": "leakage",
-            "broken": "crack",
-            "fracture": "crack",
+            "crack": ["crack", "broken", "fracture", "split"],
+            "dent": ["dent", "damaged", "deformation", "crushed", "bent", "impact"],
+            "leakage": ["leakage", "wet", "stain", "spillage", "spill", "liquid"],
+            "normal": ["normal", "none", "no_defect", "ok", "fine"]
         }
-        normalized = aliases.get(normalized, normalized)
-        return normalized if normalized in DEFECT_CLASSES else "normal"
+        
+        # We search for actual defects before 'normal' to avoid false negatives
+        for defect, keywords in aliases.items():
+            if defect == "normal":
+                continue
+            for keyword in keywords:
+                if re.search(rf"\b{re.escape(keyword)}\b", normalized):
+                    return defect
+                    
+        # If no defect keywords found, check for normal keywords
+        for keyword in aliases["normal"]:
+            if re.search(rf"\b{re.escape(keyword)}\b", normalized):
+                return "normal"
+                
+        # Fallback
+        return "normal"
 
     @staticmethod
     def _clamp_float(value: Any) -> float:
