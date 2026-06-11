@@ -1,6 +1,14 @@
+import 'dart:io';
+import 'dart:convert';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
 
 class DefectReportController extends GetxController {
+  String get baseUrl {
+    return Platform.isAndroid ? 'http://10.0.2.2:8000' : 'http://127.0.0.1:8000';
+  }
   // Dummy data for shipments
   final List<String> dummyShipments = [
     'SHP-10024-ALPHA',
@@ -25,6 +33,9 @@ class DefectReportController extends GetxController {
   final capturedImagePath = ''.obs;
   final isAnalyzing = false.obs;
   final aiAnalysisResult = ''.obs;
+  final analysisData = <String, dynamic>{}.obs;
+
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void onInit() {
@@ -33,17 +44,38 @@ class DefectReportController extends GetxController {
     if (dummyShipments.isNotEmpty) {
       selectedShipment.value = dummyShipments.first;
     }
+    fetchClasses();
   }
 
-  void captureImage() {
-    // Simulating capturing an image
-    capturedImagePath.value = 'dummy_image_path.jpg';
-    aiAnalysisResult.value = ''; // Reset previous result
+  Future<void> fetchClasses() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/classes'));
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final classes = List<String>.from(data['classes']);
+        print('Available defect classes: $classes');
+      }
+    } catch (e) {
+      print('Failed to fetch defect classes: $e');
+    }
+  }
+
+  Future<void> captureImage() async {
+    final XFile? image = await _picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 80, // Compress slightly
+    );
+    if (image != null) {
+      capturedImagePath.value = image.path;
+      aiAnalysisResult.value = ''; // Reset previous result
+      analysisData.clear();
+    }
   }
 
   void removeImage() {
     capturedImagePath.value = '';
     aiAnalysisResult.value = '';
+    analysisData.clear();
   }
 
   Future<void> submitReport() async {
@@ -53,28 +85,51 @@ class DefectReportController extends GetxController {
     }
 
     isAnalyzing.value = true;
-    aiAnalysisResult.value = 'Analyzing image...';
+    aiAnalysisResult.value = 'Uploading and analyzing image...';
 
-    // Simulate AI network call
-    await Future.delayed(const Duration(seconds: 2));
+    try {
+      final uri = Uri.parse('$baseUrl/predict');
+      
+      var request = http.MultipartRequest('POST', uri);
+      request.fields['shipment_id'] = selectedShipment.value;
+      request.files.add(await http.MultipartFile.fromPath('image', capturedImagePath.value));
+      
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        analysisData.value = data; // Store full object
+        final String defectType = data['defect_type'].toString();
+        // Capitalize defect type (e.g., 'crack' -> 'Crack')
+        final String formattedDefectType = defectType.isNotEmpty 
+            ? '${defectType[0].toUpperCase()}${defectType.substring(1)}'
+            : defectType;
+            
+        final confidence = ((data['confidence'] as double) * 100).toStringAsFixed(1);
+        final explanation = data['explanation'];
+        
+        if (defectType.toLowerCase() == 'normal') {
+          aiAnalysisResult.value = 'Clear: Normal package condition detected.\nConfidence: $confidence%';
+        } else {
+          aiAnalysisResult.value = 'Defect Detected: $formattedDefectType\nConfidence: $confidence%\nExplanation: $explanation';
+        }
 
-    isAnalyzing.value = false;
-    
-    // Randomize result slightly for dummy effect
-    final results = [
-      'Warning: Major structural dent detected. Confidence: 92%',
-      'Alert: Unauthorized seal break detected. Confidence: 88%',
-      'Notice: Minor surface scratches, no critical damage. Confidence: 95%',
-      'Clear: No visible defects detected. Confidence: 99%',
-    ];
-    results.shuffle();
-    aiAnalysisResult.value = results.first;
-
-    // In a real app we'd add this to the database, for now just show a success message
-    Get.snackbar(
-      'Analysis Complete', 
-      'Report submitted successfully.',
-      snackPosition: SnackPosition.BOTTOM,
-    );
+        Get.snackbar(
+          'Analysis Complete', 
+          'Report submitted successfully.',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+        );
+      } else {
+        aiAnalysisResult.value = 'Analysis Failed. Status Code: ${response.statusCode}\n${response.body}';
+      }
+    } catch (e) {
+      aiAnalysisResult.value = 'Analysis Failed: Unable to reach backend.\nEnsure the Python FastAPI server is running.';
+      print('API Error: $e');
+    } finally {
+      isAnalyzing.value = false;
+    }
   }
 }

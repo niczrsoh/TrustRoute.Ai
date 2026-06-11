@@ -8,7 +8,7 @@ from typing import Any
 
 from PIL import Image, ImageOps
 
-from .inference import DEFECT_CLASSES, Prediction
+from .inference import Prediction
 
 
 GRANITE_DEFECT_PROMPT = """
@@ -227,16 +227,11 @@ class GraniteVisionClassifier:
 
     @staticmethod
     def _scores_from_label(defect_type: str, confidence: float) -> dict[str, float]:
-        remaining = max(0.0, 1.0 - confidence)
-        other_score = round(remaining / (len(DEFECT_CLASSES) - 1), 4)
-        return {
-            class_name: round(confidence, 4) if class_name == defect_type else other_score
-            for class_name in DEFECT_CLASSES
-        }
+        return {defect_type: round(confidence, 4)}
 
     @staticmethod
     def _default_explanation(defect_type: str, item_type: str | None) -> str:
         subject = item_type or "delivered item"
         if defect_type == "normal":
-            return f"No visible crack, dent, or leakage was found on the {subject}."
-        return f"The {subject} appears to show visible {defect_type} damage."
+            return f"No visible damage was found on the {subject}."
+        return f"The {subject} appears to show visible condition: {defect_type}."

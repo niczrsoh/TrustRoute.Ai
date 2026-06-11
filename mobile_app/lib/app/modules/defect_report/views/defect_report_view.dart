@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:trust_route/app/core/theme/app_theme.dart';
@@ -120,13 +121,25 @@ class DefectReportView extends GetView<DefectReportController> {
                   )
                 : Container(
                     height: 150,
+                    width: double.infinity,
                     decoration: BoxDecoration(
                       color: Colors.black12,
                       borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey.shade400),
                     ),
                     child: Stack(
                       children: [
-                        const Center(child: Icon(Icons.image, size: 64, color: AppTheme.primaryNavy)),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: SizedBox(
+                            width: double.infinity,
+                            height: double.infinity,
+                            child: Image.file(
+                              File(controller.capturedImagePath.value),
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
                         Positioned(
                           top: 8,
                           right: 8,
@@ -167,50 +180,133 @@ class DefectReportView extends GetView<DefectReportController> {
                   ),
                   if (controller.aiAnalysisResult.value.isNotEmpty) ...[
                     const SizedBox(height: 24),
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: controller.aiAnalysisResult.value.contains('Clear') 
-                            ? Colors.green.shade50 
-                            : Colors.red.shade50,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
+                    if (controller.analysisData.isNotEmpty)
+                      _buildAnalysisResultCard(controller.analysisData)
+                    else
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
                           color: controller.aiAnalysisResult.value.contains('Clear') 
-                            ? Colors.green 
-                            : AppTheme.accentRed,
+                              ? Colors.green.shade50 
+                              : Colors.red.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: controller.aiAnalysisResult.value.contains('Clear') 
+                              ? Colors.green 
+                              : AppTheme.accentRed,
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  controller.aiAnalysisResult.value.contains('Clear') 
+                                      ? Icons.check_circle 
+                                      : Icons.auto_awesome, 
+                                  color: controller.aiAnalysisResult.value.contains('Clear') 
+                                      ? Colors.green 
+                                      : AppTheme.accentRed,
+                                ),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  'AI Analysis Result',
+                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Text(controller.aiAnalysisResult.value),
+                          ],
                         ),
                       ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                controller.aiAnalysisResult.value.contains('Clear') 
-                                    ? Icons.check_circle 
-                                    : Icons.auto_awesome, 
-                                color: controller.aiAnalysisResult.value.contains('Clear') 
-                                    ? Colors.green 
-                                    : AppTheme.accentRed,
-                              ),
-                              const SizedBox(width: 8),
-                              const Text(
-                                'AI Analysis Result',
-                                style: TextStyle(fontWeight: FontWeight.bold),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text(controller.aiAnalysisResult.value),
-                        ],
-                      ),
-                    ),
                   ]
                 ],
               );
             }),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildAnalysisResultCard(Map<String, dynamic> data) {
+    final defectType = data['defect_type']?.toString() ?? 'unknown';
+    final isClear = defectType.toLowerCase() == 'normal';
+    final formattedDefectType = defectType.isNotEmpty ? '${defectType[0].toUpperCase()}${defectType.substring(1)}' : defectType;
+    final confidence = data['confidence'] != null ? ((data['confidence'] as double) * 100).toStringAsFixed(1) : '0';
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isClear ? Colors.green.shade50 : Colors.red.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: isClear ? Colors.green : AppTheme.accentRed,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                isClear ? Icons.check_circle : Icons.auto_awesome,
+                color: isClear ? Colors.green : AppTheme.accentRed,
+              ),
+              const SizedBox(width: 8),
+              const Text(
+                'AI Analysis Result',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildResultRow('Condition', isClear ? 'Clear: Normal' : 'Defect: $formattedDefectType'),
+          _buildResultRow('Confidence', '$confidence%'),
+          _buildResultRow('Shipment ID', data['shipment_id']?.toString() ?? '-'),
+          _buildResultRow('Timestamp', data['timestamp']?.toString() ?? '-'),
+          if (data['item_type'] != null && data['item_type'].toString().isNotEmpty && data['item_type'].toString() != 'null')
+             _buildResultRow('Item Type', data['item_type'].toString()),
+          if (data['damage_location'] != null && data['damage_location'].toString().isNotEmpty && data['damage_location'].toString() != 'null')
+             _buildResultRow('Damage Location', data['damage_location'].toString()),
+          _buildResultRow('Explanation', data['explanation']?.toString() ?? '-'),
+          const Divider(height: 24),
+          const Text('Blockchain Evidence Data', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+          const SizedBox(height: 8),
+          _buildHashRow('Shipment Hash', data['shipment_hash']?.toString() ?? '-'),
+          _buildHashRow('Evidence Hash', data['evidence_hash']?.toString() ?? '-'),
+          _buildHashRow('Image Hash', data['image_hash']?.toString() ?? '-'),
+          _buildResultRow('Chain ID', data['defect_type_chain_id']?.toString() ?? '-'),
+          _buildResultRow('Confidence BPS', data['confidence_bps']?.toString() ?? '-'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildResultRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(width: 120, child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87))),
+          Expanded(child: Text(value, style: const TextStyle(color: Colors.black54))),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHashRow(String label, String hash) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(width: 120, child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87))),
+          Expanded(child: Text(hash, style: const TextStyle(fontFamily: 'monospace', fontSize: 12, color: Colors.blueGrey))),
+        ],
       ),
     );
   }

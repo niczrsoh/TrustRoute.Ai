@@ -80,20 +80,24 @@ class DashboardView extends GetView<DashboardController> {
   }
 
   Widget _buildHomeTab(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildStatisticsCards(),
-          const SizedBox(height: 24),
-          _buildChartSection(context),
-          const SizedBox(height: 24),
-          _buildFilterControls(),
-          const SizedBox(height: 16),
-          _buildRecentHistory(),
-          const SizedBox(height: 40),
-        ],
+    return RefreshIndicator(
+      onRefresh: () => controller.fetchReports(),
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildStatisticsCards(),
+            const SizedBox(height: 24),
+            _buildChartSection(context),
+            const SizedBox(height: 24),
+            _buildFilterControls(),
+            const SizedBox(height: 16),
+            _buildRecentHistory(),
+            const SizedBox(height: 40),
+          ],
+        ),
       ),
     );
   }
@@ -397,9 +401,12 @@ class DashboardView extends GetView<DashboardController> {
               child: ElevatedButton.icon(
                 onPressed: () async {
                   final url = Uri.parse('https://sepolia.etherscan.io/tx/${shipment.mainTxHash}');
-                  if (await canLaunchUrl(url)) {
-                    await launchUrl(url);
-                  } else {
+                  try {
+                    final success = await launchUrl(url, mode: LaunchMode.inAppWebView);
+                    if (!success) {
+                      Get.snackbar('Error', 'Could not launch Sepolia Etherscan');
+                    }
+                  } catch (e) {
                     Get.snackbar('Error', 'Could not launch Sepolia Etherscan');
                   }
                 },
@@ -498,12 +505,41 @@ class DashboardView extends GetView<DashboardController> {
                     ],
                   ),
                   const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      const Icon(Icons.tag, size: 14, color: Colors.grey),
-                      const SizedBox(width: 4),
-                      Text('Tx: $hash', style: const TextStyle(color: Colors.grey, fontSize: 12, fontFamily: 'monospace')),
-                    ],
+                  GestureDetector(
+                    onTap: () async {
+                      if (hash.startsWith('0x') && hash != '0x0000000000000000000000000000000000000000') {
+                        final url = Uri.parse('https://sepolia.etherscan.io/tx/$hash');
+                        try {
+                          final success = await launchUrl(url, mode: LaunchMode.inAppWebView);
+                          if (!success) {
+                            Get.snackbar('Error', 'Could not launch Sepolia Etherscan');
+                          }
+                        } catch (e) {
+                          Get.snackbar('Error', 'Could not launch Sepolia Etherscan');
+                        }
+                      }
+                    },
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Padding(
+                          padding: EdgeInsets.only(top: 2.0),
+                          child: Icon(Icons.tag, size: 14, color: Colors.grey),
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            'Tx: $hash',
+                            style: TextStyle(
+                              color: (hash.startsWith('0x') && hash != '0x0000000000000000000000000000000000000000') ? Colors.blue : Colors.grey,
+                              fontSize: 12,
+                              fontFamily: 'monospace',
+                              decoration: (hash.startsWith('0x') && hash != '0x0000000000000000000000000000000000000000') ? TextDecoration.underline : TextDecoration.none,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),

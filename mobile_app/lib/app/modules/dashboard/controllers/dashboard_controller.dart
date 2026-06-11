@@ -1,7 +1,10 @@
 import 'dart:async';
+import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:http/http.dart' as http;
 
 class LiveShipment {
   final String id;
@@ -34,6 +37,8 @@ class DefectRecord {
   final String locationName;
   final double latitude;
   final double longitude;
+  final String shipmentHash;
+  final String evidenceHash;
 
   DefectRecord({
     required this.id,
@@ -47,7 +52,40 @@ class DefectRecord {
     this.locationName = 'Unknown Location',
     this.latitude = 0.0,
     this.longitude = 0.0,
+    this.shipmentHash = '',
+    this.evidenceHash = '',
   });
+
+  factory DefectRecord.fromJson(Map<String, dynamic> json) {
+    String type = json['defect_type']?.toString() ?? 'unknown';
+    String title = type.isNotEmpty ? type[0].toUpperCase() + type.substring(1) : 'Unknown';
+    if (title.toLowerCase() == 'normal') {
+      title = 'Normal Condition';
+    } else {
+      title = '$title Detected';
+    }
+
+    String severity = 'Low';
+    if (type.toLowerCase() == 'crack') severity = 'Critical';
+    else if (type.toLowerCase() == 'dent') severity = 'Medium';
+    else if (type.toLowerCase() == 'leakage') severity = 'High';
+
+    return DefectRecord(
+      id: 'DEF-${json['id']}',
+      title: title,
+      status: 'Pending', // Default
+      date: DateTime.tryParse(json['timestamp']?.toString() ?? '') ?? DateTime.now(),
+      severity: severity,
+      shipmentId: json['shipment_id']?.toString() ?? 'Unknown',
+      assetId: json['item_type']?.toString() ?? 'Unknown Asset',
+      description: json['explanation']?.toString() ?? 'No description provided.',
+      locationName: json['damage_location']?.toString() ?? 'Unknown Location',
+      latitude: 0.0,
+      longitude: 0.0,
+      shipmentHash: json['shipment_hash']?.toString() ?? '',
+      evidenceHash: json['evidence_hash']?.toString() ?? '',
+    );
+  }
 }
 
 class BlockchainEvent {
@@ -129,6 +167,119 @@ class DashboardController extends GetxController {
   void onInit() {
     super.onInit();
     _startLocationSimulation();
+    checkBackendHealth();
+    fetchReports();
+  }
+
+  String get baseUrl {
+    return Platform.isAndroid ? 'http://10.0.2.2:8000' : 'http://127.0.0.1:8000';
+  }
+
+  Future<void> checkBackendHealth() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/health'));
+      if (response.statusCode == 200) {
+        print('Backend is healthy: ${response.body}');
+      }
+    } catch (e) {
+      print('Backend health check failed: $e');
+    }
+  }
+
+  String _formatDate(DateTime date) {
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    String hour = date.hour > 12 ? '${date.hour - 12}' : (date.hour == 0 ? '12' : '${date.hour}');
+    String min = date.minute.toString().padLeft(2, '0');
+    String amPm = date.hour >= 12 ? 'PM' : 'AM';
+    return '${months[date.month - 1]} ${date.day}, ${date.year} - $hour:$min $amPm';
+  }
+
+  Future<void> fetchReports() async {
+    try {
+      final response = await http.get(Uri.parse('$baseUrl/reports'));
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        recentDefects.value = data.map((json) => DefectRecord.fromJson(json)).toList();
+        
+        totalDefects.value = recentDefects.length;
+        pendingDefects.value = recentDefects.where((d) => d.status == 'Pending').length;
+        resolvedDefects.value = recentDefects.where((d) => d.status == 'Resolved').length;
+
+        // Build dynamic blockchain data from the reports
+        final Map<String, BlockchainShipment> newBlockchainData = {};
+        final Set<String> newAvailableShipments = {};
+        
+        final grouped = <String, List<DefectRecord>>{};
+        for (var defect in recentDefects) {
+          grouped.putIfAbsent(defect.shipmentId, () => []).add(defect);
+        }
+        
+        for (var entry in grouped.entries) {
+          final shipmentId = entry.key;
+          final defects = entry.value;
+          defects.sort((a, b) => a.date.compareTo(b.date)); // Sort chronologically
+          
+          final assetId = defects.first.assetId;
+          final mainTxHash = defects.first.shipmentHash.isNotEmpty ? defects.first.shipmentHash : '0x0000000000000000000000000000000000000000';
+          
+          final events = <BlockchainEvent>[];
+          // Initial event
+          events.add(BlockchainEvent(
+            title: 'Initial Record Created',
+            subtitle: 'Origin Port, Smart Contract Deployed',
+            date: _formatDate(defects.first.date.subtract(const Duration(minutes: 30))),
+            hash: mainTxHash,
+            statusColor: 'blue',
+          ));
+          
+          for (var defect in defects) {
+             String color = 'red';
+             if (defect.status == 'Resolved') color = 'green';
+             else if (defect.severity == 'Low') color = 'orange';
+
+             String subtitle = defect.description.length > 40 
+                ? '${defect.description.substring(0, 40)}...' 
+                : defect.description;
+
+             events.add(BlockchainEvent(
+               title: defect.title,
+               subtitle: subtitle,
+               date: _formatDate(defect.date),
+               hash: defect.evidenceHash.isNotEmpty ? defect.evidenceHash : '0x...',
+               statusColor: color,
+             ));
+          }
+          
+          events.add(BlockchainEvent(
+            title: 'Arriving Record (Pending)',
+            subtitle: 'Destination Port',
+            date: 'Awaiting Arrival',
+            hash: 'Pending...',
+            statusColor: 'grey',
+            isCompleted: false,
+          ));
+          
+          newBlockchainData[shipmentId] = BlockchainShipment(
+            shipmentId: shipmentId,
+            assetId: assetId,
+            mainTxHash: mainTxHash,
+            events: events,
+          );
+          newAvailableShipments.add(shipmentId);
+        }
+        
+        blockchainData.value = newBlockchainData;
+        availableShipments.value = newAvailableShipments.toList();
+        
+        if (availableShipments.isNotEmpty && !availableShipments.contains(selectedBlockchainShipment.value)) {
+          selectedBlockchainShipment.value = availableShipments.first;
+        }
+      } else {
+        print('Error fetching reports: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Failed to fetch reports: $e');
+    }
   }
 
   @override
@@ -189,8 +340,8 @@ class DashboardController extends GetxController {
   }
 
   // Blockchain Tab State
-  final availableShipments = <String>['SHP-99201', 'SHP-99180', 'SHP-99155'].obs;
-  final selectedBlockchainShipment = 'SHP-99201'.obs;
+  final availableShipments = <String>[].obs;
+  final selectedBlockchainShipment = ''.obs;
 
   void updateBlockchainShipment(String? shipmentId) {
     if (shipmentId != null) {
@@ -198,39 +349,7 @@ class DashboardController extends GetxController {
     }
   }
 
-  final blockchainData = <String, BlockchainShipment>{
-    'SHP-99201': BlockchainShipment(
-      shipmentId: 'SHP-99201',
-      assetId: 'CNT-5501X',
-      mainTxHash: '0x7de6692666c01f2a9a1efa2bc9e0db4bb6f5add39dc53700a1f392a898bbef54',
-      events: [
-        BlockchainEvent(title: 'Initial Record Created', subtitle: 'Origin Port, Smart Contract Deployed', date: 'Jun 8, 2026 - 10:00 AM', hash: '0x1a2b...c3d4', statusColor: 'blue'),
-        BlockchainEvent(title: 'Damaged Record (Defect)', subtitle: 'Transit Checkpoint - Container Seal Broken', date: 'Jun 10, 2026 - 01:15 PM', hash: '0x8f3c...9a12b', statusColor: 'red'),
-        BlockchainEvent(title: 'Arriving Record (Pending)', subtitle: 'Destination Port', date: 'Awaiting Arrival', hash: 'Pending...', statusColor: 'grey', isCompleted: false),
-      ],
-    ),
-    'SHP-99180': BlockchainShipment(
-      shipmentId: 'SHP-99180',
-      assetId: 'REF-3029B',
-      mainTxHash: '0xabc1234567890def1234567890abcdef12345678',
-      events: [
-        BlockchainEvent(title: 'Initial Record Created', subtitle: 'Origin Port, Smart Contract Deployed', date: 'Jun 7, 2026 - 09:00 AM', hash: '0x99bb...11aa', statusColor: 'blue'),
-        BlockchainEvent(title: 'Temperature Exceeded', subtitle: 'North-South Expressway KM 255', date: 'Jun 9, 2026 - 11:20 AM', hash: '0x44dd...22ee', statusColor: 'red'),
-        BlockchainEvent(title: 'Resolved Record', subtitle: 'Maintenance Facility', date: 'Jun 9, 2026 - 04:00 PM', hash: '0x77ff...33cc', statusColor: 'green'),
-        BlockchainEvent(title: 'Arrived', subtitle: 'Destination Port', date: 'Jun 10, 2026 - 08:00 AM', hash: '0x1122...3344', statusColor: 'blue'),
-      ],
-    ),
-    'SHP-99155': BlockchainShipment(
-      shipmentId: 'SHP-99155',
-      assetId: 'PLT-8800A',
-      mainTxHash: '0xdef1234567890abc1234567890def1234567890a',
-      events: [
-        BlockchainEvent(title: 'Initial Record Created', subtitle: 'Origin Port, Smart Contract Deployed', date: 'Jun 6, 2026 - 08:00 AM', hash: '0x1234...abcd', statusColor: 'blue'),
-        BlockchainEvent(title: 'Packaging Damage', subtitle: 'Shah Alam Distribution Center', date: 'Jun 8, 2026 - 02:30 PM', hash: '0x5678...efgh', statusColor: 'red'),
-        BlockchainEvent(title: 'Arriving Record (Pending)', subtitle: 'Destination Port', date: 'Awaiting Arrival', hash: 'Pending...', statusColor: 'grey', isCompleted: false),
-      ],
-    ),
-  };
+  final blockchainData = <String, BlockchainShipment>{}.obs;
 
   // Dummy data for statistics
   final totalDefects = 156.obs;
@@ -240,57 +359,8 @@ class DashboardController extends GetxController {
   // Dummy data for chart (defects per month)
   final monthlyDefects = <double>[12, 19, 15, 25, 22, 30].obs;
 
-  // Dummy data for recent history
-  final recentDefects = <DefectRecord>[
-    DefectRecord(
-      id: 'DEF-1042',
-      title: 'Container Seal Broken',
-      status: 'Pending',
-      date: DateTime.now().subtract(const Duration(hours: 2)),
-      severity: 'High',
-      shipmentId: 'SHP-99201',
-      assetId: 'CNT-5501X',
-      locationName: 'Port Klang Checkpoint Alpha',
-      latitude: 3.0014,
-      longitude: 101.3934,
-    ),
-    DefectRecord(
-      id: 'DEF-1041',
-      title: 'Temperature Exceeded Limit',
-      status: 'Resolved',
-      date: DateTime.now().subtract(const Duration(days: 1)),
-      severity: 'Critical',
-      shipmentId: 'SHP-99180',
-      assetId: 'REF-3029B',
-      locationName: 'North-South Expressway KM 255',
-      latitude: 2.7663,
-      longitude: 101.9546,
-    ),
-    DefectRecord(
-      id: 'DEF-1040',
-      title: 'Packaging Damage',
-      status: 'Pending',
-      date: DateTime.now().subtract(const Duration(days: 2)),
-      severity: 'Medium',
-      shipmentId: 'SHP-99155',
-      assetId: 'PLT-8800A',
-      locationName: 'Shah Alam Distribution Center',
-      latitude: 3.0733,
-      longitude: 101.5185,
-    ),
-    DefectRecord(
-      id: 'DEF-1039',
-      title: 'Missing Label',
-      status: 'Resolved',
-      date: DateTime.now().subtract(const Duration(days: 3)),
-      severity: 'Low',
-      shipmentId: 'SHP-99102',
-      assetId: 'PLT-8805A',
-      locationName: 'Penang Port Terminal',
-      latitude: 5.4141,
-      longitude: 100.3288,
-    ),
-  ].obs;
+  // Recent history fetched from API
+  final recentDefects = <DefectRecord>[].obs;
 
   // Search, Filter, Sort State
   final searchQuery = ''.obs;
