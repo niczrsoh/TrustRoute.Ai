@@ -9,8 +9,23 @@ class LiveMonitoringTab extends GetView<DashboardController> {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: Stack(
+            children: [
         Obx(() {
           final filter = controller.selectedLiveShipment.value;
           final shipmentsToDisplay = filter == 'All'
@@ -114,6 +129,9 @@ class LiveMonitoringTab extends GetView<DashboardController> {
           ),
         ),
       ],
+          ),
+        ),
+      ),
     );
   }
 }

@@ -13,11 +13,14 @@ class DefectDetailView extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text('Defect Details', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('Defect Details', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: -0.5, color: AppTheme.primaryNavy)),
         elevation: 0,
+        backgroundColor: Colors.transparent,
+        iconTheme: const IconThemeData(color: AppTheme.primaryNavy),
         flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: AppTheme.primaryGradient,
+          decoration: BoxDecoration(
+            color: AppTheme.cardWhite.withOpacity(0.9),
+            border: const Border(bottom: BorderSide(color: Color(0xFFF1F5F9))),
           ),
         ),
       ),
@@ -118,9 +121,9 @@ class DefectDetailView extends StatelessWidget {
           _buildInfoRow('Date Reported', _formatDateFull(defect.date)),
           _buildInfoRow('Severity', defect.severity, isSeverity: true),
           _buildInfoRow('Shipment ID', defect.shipmentId),
-          _buildInfoRow('Asset ID', defect.assetId),
-          _buildInfoRow('Location', defect.locationName),
-          _buildInfoRow('Coordinates', '${defect.latitude.toStringAsFixed(4)}, ${defect.longitude.toStringAsFixed(4)}'),
+          _buildInfoRow('Asset ID', 'ASSET-204-X' ),
+          _buildInfoRow('Location', 'Warehouse B, Port Klang' ),
+          _buildInfoRow('Coordinates', '3.001401345930843, 101.39339287116556'),
           const SizedBox(height: 16),
           const Text(
             'Description',
@@ -174,6 +177,12 @@ class DefectDetailView extends StatelessWidget {
   }
 
   Widget _buildImageGallery() {
+    //dummy images
+    List<String> dummyImages = [
+      'assets/images/dummy_defect_1.jpg',
+      'assets/images/dummy_defect_2.jpg',
+      'assets/images/dummy_defect_3.jpg',
+    ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

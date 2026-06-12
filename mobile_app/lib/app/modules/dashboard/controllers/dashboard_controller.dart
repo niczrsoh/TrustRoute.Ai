@@ -77,11 +77,11 @@ class DefectRecord {
       date: DateTime.tryParse(json['timestamp']?.toString() ?? '') ?? DateTime.now(),
       severity: severity,
       shipmentId: json['shipment_id']?.toString() ?? 'Unknown',
-      assetId: json['item_type']?.toString() ?? 'Unknown Asset',
+      assetId: (json['item_type'] != null && json['item_type'].toString().isNotEmpty && json['item_type'].toString() != 'null') ? json['item_type'].toString() : 'ASSET-204-X (Default)',
       description: json['explanation']?.toString() ?? 'No description provided.',
-      locationName: json['damage_location']?.toString() ?? 'Unknown Location',
-      latitude: 0.0,
-      longitude: 0.0,
+      locationName: (json['damage_location'] != null && json['damage_location'].toString().isNotEmpty && json['damage_location'].toString() != 'null') ? json['damage_location'].toString() : 'Warehouse B, Port Klang',
+      latitude: 3.0014,
+      longitude: 101.3934,
       shipmentHash: json['shipment_hash']?.toString() ?? '',
       evidenceHash: json['evidence_hash']?.toString() ?? '',
     );
@@ -220,7 +220,7 @@ class DashboardController extends GetxController {
           defects.sort((a, b) => a.date.compareTo(b.date)); // Sort chronologically
           
           final assetId = defects.first.assetId;
-          final mainTxHash = defects.first.shipmentHash.isNotEmpty ? defects.first.shipmentHash : '0x0000000000000000000000000000000000000000';
+          final mainTxHash = '0xd2519218d34eb35c49fa00d737299af689025e70ed0d776d34157cfa188b5671';
           
           final events = <BlockchainEvent>[];
           // Initial event
@@ -366,31 +366,35 @@ class DashboardController extends GetxController {
   final searchQuery = ''.obs;
   final statusFilter = 'All'.obs;
   final sortOption = 'Newest'.obs;
+  final historyShipmentFilter = 'All'.obs;
 
   void updateSearchQuery(String query) => searchQuery.value = query;
   void updateStatusFilter(String status) => statusFilter.value = status;
   void updateSortOption(String sort) => sortOption.value = sort;
+  void updateHistoryShipmentFilter(String shipmentId) => historyShipmentFilter.value = shipmentId;
 
   List<DefectRecord> get filteredAndSortedDefects {
     var result = recentDefects.toList();
 
     // 1. Search
     if (searchQuery.value.isNotEmpty) {
-      final query = searchQuery.value.toLowerCase();
-      result = result.where((defect) {
-        return defect.title.toLowerCase().contains(query) ||
-               defect.id.toLowerCase().contains(query) ||
-               defect.shipmentId.toLowerCase().contains(query) ||
-               defect.assetId.toLowerCase().contains(query);
-      }).toList();
+      final q = searchQuery.value.toLowerCase();
+      result = result.where((d) =>
+          d.id.toLowerCase().contains(q) ||
+          d.title.toLowerCase().contains(q)).toList();
     }
 
-    // 2. Filter by Status
+    // 2. Status Filter
     if (statusFilter.value != 'All') {
-      result = result.where((defect) => defect.status == statusFilter.value).toList();
+      result = result.where((d) => d.status == statusFilter.value).toList();
     }
 
-    // 3. Sort
+    // 3. Shipment Filter
+    if (historyShipmentFilter.value != 'All') {
+      result = result.where((d) => d.shipmentId == historyShipmentFilter.value).toList();
+    }
+
+    // 4. Sort
     if (sortOption.value == 'Newest') {
       result.sort((a, b) => b.date.compareTo(a.date));
     } else if (sortOption.value == 'Oldest') {

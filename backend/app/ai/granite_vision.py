@@ -197,12 +197,12 @@ class GraniteVisionClassifier:
             if defect == "normal":
                 continue
             for keyword in keywords:
-                if re.search(rf"\b{re.escape(keyword)}\b", normalized):
+                if keyword in normalized:
                     return defect
                     
         # If no defect keywords found, check for normal keywords
         for keyword in aliases["normal"]:
-            if re.search(rf"\b{re.escape(keyword)}\b", normalized):
+            if keyword in normalized:
                 return "normal"
                 
         # Fallback

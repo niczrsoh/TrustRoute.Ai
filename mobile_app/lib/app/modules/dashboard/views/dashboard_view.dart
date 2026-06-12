@@ -14,7 +14,7 @@ class DashboardView extends GetView<DashboardController> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50], // Or use app theme background
+      backgroundColor: AppTheme.backgroundWhite,
       appBar: AppBar(
         title: Obx(() {
           String title = 'Dashboard';
@@ -22,15 +22,23 @@ class DashboardView extends GetView<DashboardController> {
           if (controller.selectedIndex.value == 2) title = 'Report Defect';
           if (controller.selectedIndex.value == 3) title = 'Blockchain Evidence';
           if (controller.selectedIndex.value == 4) title = 'Profile';
-          return Text(
-            title,
-            style: const TextStyle(fontWeight: FontWeight.bold),
+          return Row(
+            children: [
+              Image.asset('assets/images/trustroute-logo.png', height: 28),
+              const SizedBox(width: 12),
+              Text(
+                title,
+                style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: -0.5, color: AppTheme.primaryNavy),
+              ),
+            ],
           );
         }),
         elevation: 0,
+        backgroundColor: Colors.transparent,
         flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: AppTheme.primaryGradient,
+          decoration: BoxDecoration(
+            color: AppTheme.cardWhite.withOpacity(0.9),
+            border: const Border(bottom: BorderSide(color: Color(0xFFF1F5F9))),
           ),
         ),
       ),
@@ -47,34 +55,35 @@ class DashboardView extends GetView<DashboardController> {
           return _buildProfileTab(context);
         }
       }),
-      bottomNavigationBar: Obx(() => BottomNavigationBar(
-        currentIndex: controller.selectedIndex.value,
-        onTap: controller.changeTabIndex,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: AppTheme.primaryNavy,
-        unselectedItemColor: Colors.grey,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.map),
-            label: 'Live',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.add_a_photo),
-            label: 'Report',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.security),
-            label: 'Evidence',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
+      bottomNavigationBar: Obx(() => Container(
+        decoration: BoxDecoration(
+          color: AppTheme.cardWhite,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 20,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: BottomNavigationBar(
+          currentIndex: controller.selectedIndex.value,
+          onTap: controller.changeTabIndex,
+          type: BottomNavigationBarType.fixed,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          selectedItemColor: AppTheme.secondaryBlue,
+          unselectedItemColor: const Color(0xFF94A3B8),
+          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
+          items: const [
+            BottomNavigationBarItem(icon: Icon(Icons.dashboard_rounded), label: 'Home'),
+            BottomNavigationBarItem(icon: Icon(Icons.map_rounded), label: 'Live'),
+            BottomNavigationBarItem(icon: Icon(Icons.add_a_photo_rounded), label: 'Report'),
+            BottomNavigationBarItem(icon: Icon(Icons.security_rounded), label: 'Evidence'),
+            BottomNavigationBarItem(icon: Icon(Icons.person_rounded), label: 'Profile'),
+          ],
+        ),
       )),
     );
   }
@@ -136,6 +145,32 @@ class DashboardView extends GetView<DashboardController> {
             ),
           ),
         ),
+        const SizedBox(height: 12),
+        // Shipment Filter
+        Obx(() => Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            border: Border.all(color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              isExpanded: true,
+              value: controller.historyShipmentFilter.value,
+              items: ['All', ...controller.availableShipments].map((String value) {
+                return DropdownMenuItem<String>(
+                  value: value,
+                  child: Text(value == 'All' ? 'All Shipments' : 'Shipment: $value'),
+                );
+              }).toList(),
+              onChanged: (val) {
+                if (val != null) controller.updateHistoryShipmentFilter(val);
+              },
+            ),
+          ),
+        )),
         const SizedBox(height: 12),
         // Filters & Sort
         Row(
@@ -222,15 +257,10 @@ class DashboardView extends GetView<DashboardController> {
             child: Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppTheme.cardWhite,
                 borderRadius: BorderRadius.circular(16),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.03),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+                border: Border.all(color: const Color(0xFFF1F5F9)),
+                boxShadow: AppTheme.softShadow,
               ),
               child: Row(
                 children: [
@@ -469,12 +499,15 @@ class DashboardView extends GetView<DashboardController> {
           Column(
             children: [
               Container(
-                width: 20,
-                height: 20,
+                width: 24,
+                height: 24,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: isCompleted ? color : Colors.transparent,
-                  border: Border.all(color: color, width: 2),
+                  border: Border.all(color: color, width: 3),
+                  boxShadow: isCompleted ? [
+                    BoxShadow(color: color.withOpacity(0.4), blurRadius: 8, spreadRadius: 2)
+                  ] : [],
                 ),
               ),
               if (!isLast)
@@ -504,7 +537,7 @@ class DashboardView extends GetView<DashboardController> {
                       Text(date, style: const TextStyle(color: Colors.grey, fontSize: 12)),
                     ],
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 8),
                   GestureDetector(
                     onTap: () async {
                       if (hash.startsWith('0x') && hash != '0x0000000000000000000000000000000000000000') {
@@ -519,26 +552,32 @@ class DashboardView extends GetView<DashboardController> {
                         }
                       }
                     },
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Padding(
-                          padding: EdgeInsets.only(top: 2.0),
-                          child: Icon(Icons.tag, size: 14, color: Colors.grey),
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            'Tx: $hash',
-                            style: TextStyle(
-                              color: (hash.startsWith('0x') && hash != '0x0000000000000000000000000000000000000000') ? Colors.blue : Colors.grey,
-                              fontSize: 12,
-                              fontFamily: 'monospace',
-                              decoration: (hash.startsWith('0x') && hash != '0x0000000000000000000000000000000000000000') ? TextDecoration.underline : TextDecoration.none,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: AppTheme.frostBlue.withOpacity(0.4),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppTheme.secondaryBlue.withOpacity(0.2)),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          Icon(Icons.link, size: 14, color: AppTheme.secondaryBlue),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              hash,
+                              style: TextStyle(
+                                color: AppTheme.primaryNavy,
+                                fontSize: 11,
+                                fontFamily: 'monospace',
+                                fontWeight: FontWeight.w600,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -723,8 +762,8 @@ class DashboardView extends GetView<DashboardController> {
           child: _buildStatCard(
             title: 'Total\nDefects',
             value: controller.totalDefects.value.toString(),
-            icon: Icons.bug_report,
-            color: Colors.blueAccent,
+            icon: Icons.bug_report_rounded,
+            colors: [const Color(0xFF3B82F6), const Color(0xFF2563EB)],
           ),
         ),
         const SizedBox(width: 12),
@@ -732,8 +771,8 @@ class DashboardView extends GetView<DashboardController> {
           child: _buildStatCard(
             title: 'Pending\nReview',
             value: controller.pendingDefects.value.toString(),
-            icon: Icons.pending_actions,
-            color: Colors.orangeAccent,
+            icon: Icons.pending_actions_rounded,
+            colors: [const Color(0xFFF59E0B), const Color(0xFFD97706)],
           ),
         ),
         const SizedBox(width: 12),
@@ -741,41 +780,52 @@ class DashboardView extends GetView<DashboardController> {
           child: _buildStatCard(
             title: 'Resolved\nIssues',
             value: controller.resolvedDefects.value.toString(),
-            icon: Icons.check_circle_outline,
-            color: Colors.greenAccent,
+            icon: Icons.check_circle_rounded,
+            colors: [const Color(0xFF10B981), const Color(0xFF059669)],
           ),
         ),
       ],
     );
   }
 
-  Widget _buildStatCard({required String title, required String value, required IconData icon, required Color color}) {
+  Widget _buildStatCard({required String title, required String value, required IconData icon, required List<Color> colors}) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        gradient: LinearGradient(
+          colors: colors,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: colors[0].withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: 28),
-          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, color: Colors.white, size: 24),
+          ),
+          const SizedBox(height: 16),
           Text(
             value,
-            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
           ),
           const SizedBox(height: 4),
           Text(
             title,
-            style: TextStyle(fontSize: 12, color: Colors.grey[600], height: 1.2),
+            style: TextStyle(fontSize: 13, color: Colors.white.withOpacity(0.9), height: 1.2, fontWeight: FontWeight.w500),
           ),
         ],
       ),

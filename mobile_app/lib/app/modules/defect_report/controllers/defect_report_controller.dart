@@ -4,29 +4,27 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:http/http.dart' as http;
+import 'package:trust_route/app/modules/dashboard/controllers/dashboard_controller.dart';
 
 class DefectReportController extends GetxController {
   String get baseUrl {
     return Platform.isAndroid ? 'http://10.0.2.2:8000' : 'http://127.0.0.1:8000';
   }
-  // Dummy data for shipments
-  final List<String> dummyShipments = [
-    'SHP-10024-ALPHA',
-    'SHP-99213-BETA',
-    'SHP-55092-GAMMA',
-  ];
 
-  // Dummy defect history
-  final Map<String, List<Map<String, String>>> dummyDefectHistory = {
-    'SHP-10024-ALPHA': [
-      {'date': '2026-06-08', 'issue': 'Minor dent on container side', 'status': 'Resolved'},
-      {'date': '2026-06-05', 'issue': 'Seal broken', 'status': 'Pending Investigation'},
-    ],
-    'SHP-99213-BETA': [],
-    'SHP-55092-GAMMA': [
-      {'date': '2026-06-01', 'issue': 'Water damage on outer packaging', 'status': 'Resolved'},
-    ],
-  };
+  DashboardController get dashboard => Get.find<DashboardController>();
+
+  List<String> get dynamicShipments {
+    if (dashboard.availableShipments.isEmpty) {
+      return ['SHP-10024-ALPHA', 'SHP-99213-BETA', 'SHP-55092-GAMMA'];
+    }
+    return dashboard.availableShipments;
+  }
+
+  List<DefectRecord> get dynamicDefectHistory {
+    return dashboard.recentDefects
+        .where((d) => d.shipmentId == selectedShipment.value)
+        .toList();
+  }
 
   // State variables
   final selectedShipment = ''.obs;
@@ -41,8 +39,8 @@ class DefectReportController extends GetxController {
   void onInit() {
     super.onInit();
     // Select first shipment by default
-    if (dummyShipments.isNotEmpty) {
-      selectedShipment.value = dummyShipments.first;
+    if (dynamicShipments.isNotEmpty) {
+      selectedShipment.value = dynamicShipments.first;
     }
     fetchClasses();
   }

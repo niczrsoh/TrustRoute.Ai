@@ -71,10 +71,10 @@ class LoginView extends GetView<AuthController> {
                               )
                             ],
                           ),
-                          child: const Icon(
-                            Icons.security_rounded,
-                            size: 80,
-                            color: Colors.white,
+                          child: Image.asset(
+                            'assets/images/trustroute-logo.png',
+                            height: 80,
+                            width: 80,
                           ),
                         ),
                       ),
