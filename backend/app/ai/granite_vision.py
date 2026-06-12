@@ -13,12 +13,10 @@ from .inference import Prediction
 
 GRANITE_DEFECT_PROMPT = """
 Carefully inspect the entire image for any visible damage. If there are multiple items and ANY of them are damaged, you MUST report the damage instead of normal.
-Reply with exactly one label only:
-normal, crack, dent, or leakage.
-normal=no visible defect in the entire image.
-crack=crack/split/fracture/broken pieces.
-dent=deformation/crushed/bent/impact.
-leakage=liquid/stain/wet/spill.
+Reply with exactly one short condition label only.
+Do not choose from predefined classes.
+Use your own concise label based on what is visible.
+Examples: normal, crushed_package, torn_box, wet_package, broken_glass, scratched_car, dented_panel, leaked_liquid.
 """.strip()
 
 
@@ -184,29 +182,12 @@ class GraniteVisionClassifier:
     @staticmethod
     def _normalize_defect_type(value: str) -> str:
         normalized = value.strip().lower().replace(" ", "_").replace("-", "_")
-
-        aliases = {
-            "crack": ["crack", "broken", "fracture", "split"],
-            "dent": ["dent", "damaged", "deformation", "crushed", "bent", "impact"],
-            "leakage": ["leakage", "wet", "stain", "spillage", "spill", "liquid"],
-            "normal": ["normal", "none", "no_defect", "ok", "fine"]
-        }
-        
-        # We search for actual defects before 'normal' to avoid false negatives
-        for defect, keywords in aliases.items():
-            if defect == "normal":
-                continue
-            for keyword in keywords:
-                if re.search(rf"\b{re.escape(keyword)}\b", normalized):
-                    return defect
-                    
-        # If no defect keywords found, check for normal keywords
-        for keyword in aliases["normal"]:
-            if re.search(rf"\b{re.escape(keyword)}\b", normalized):
-                return "normal"
-                
-        # Fallback
-        return "normal"
+        normalized = normalized.strip("`'\".,:;()[]{}")
+        normalized = re.sub(r"[^a-z0-9_]+", "_", normalized)
+        normalized = re.sub(r"_+", "_", normalized).strip("_")
+        if not normalized:
+            return "unknown_condition"
+        return normalized[:64]
 
     @staticmethod
     def _clamp_float(value: Any) -> float:

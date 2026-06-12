@@ -19,6 +19,9 @@ class PredictionResponse(BaseModel):
     confidence_bps: int = Field(ge=0, le=10000)
     defect_type_chain_id: int = Field(ge=0, le=4)
     detected_at_unix: int
+    blockchain_status: str | None = None
+    blockchain_tx_hash: str | None = None
+    blockchain_error: str | None = None
     image_path: str
     timestamp: datetime
 
@@ -38,6 +41,9 @@ class ReportResponse(BaseModel):
     confidence_bps: int = Field(ge=0, le=10000)
     defect_type_chain_id: int = Field(ge=0, le=4)
     detected_at_unix: int
+    blockchain_status: str | None = None
+    blockchain_tx_hash: str | None = None
+    blockchain_error: str | None = None
     image_path: str
     timestamp: datetime
 
@@ -50,6 +56,13 @@ class BlockchainAnchorPayload(BaseModel):
     defect_type_chain_id: int = Field(ge=0, le=4)
     confidence_bps: int = Field(ge=0, le=10000)
     detected_at_unix: int
+
+
+class BlockchainTransactionResponse(BaseModel):
+    status: str
+    tx_hash: str | None = None
+    message: str | None = None
+    payload: BlockchainAnchorPayload
 
 
 class HealthResponse(BaseModel):

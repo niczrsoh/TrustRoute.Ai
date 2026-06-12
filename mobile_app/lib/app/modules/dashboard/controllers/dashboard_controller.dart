@@ -37,8 +37,12 @@ class DefectRecord {
   final String locationName;
   final double latitude;
   final double longitude;
+  final double confidence;
   final String shipmentHash;
   final String evidenceHash;
+  final String blockchainStatus;
+  final String blockchainTxHash;
+  final String blockchainError;
 
   DefectRecord({
     required this.id,
@@ -48,17 +52,22 @@ class DefectRecord {
     required this.severity,
     required this.shipmentId,
     required this.assetId,
-    this.description = 'Detailed description of the issue encountered during transit.',
+    this.description =
+        'Detailed description of the issue encountered during transit.',
     this.locationName = 'Unknown Location',
     this.latitude = 0.0,
     this.longitude = 0.0,
+    this.confidence = 0.0,
     this.shipmentHash = '',
     this.evidenceHash = '',
+    this.blockchainStatus = 'not_submitted',
+    this.blockchainTxHash = '',
+    this.blockchainError = '',
   });
 
   factory DefectRecord.fromJson(Map<String, dynamic> json) {
     String type = json['defect_type']?.toString() ?? 'unknown';
-    String title = type.isNotEmpty ? type[0].toUpperCase() + type.substring(1) : 'Unknown';
+    String title = _formatLabel(type);
     if (title.toLowerCase() == 'normal') {
       title = 'Normal Condition';
     } else {
@@ -66,25 +75,60 @@ class DefectRecord {
     }
 
     String severity = 'Low';
-    if (type.toLowerCase() == 'crack') severity = 'Critical';
-    else if (type.toLowerCase() == 'dent') severity = 'Medium';
-    else if (type.toLowerCase() == 'leakage') severity = 'High';
+    final lowerType = type.toLowerCase();
+    if (lowerType.contains('crack') ||
+        lowerType.contains('broken') ||
+        lowerType.contains('shattered')) {
+      severity = 'Critical';
+    } else if (lowerType.contains('leak') ||
+        lowerType.contains('wet') ||
+        lowerType.contains('water')) {
+      severity = 'High';
+    } else if (lowerType.contains('dent') ||
+        lowerType.contains('crush') ||
+        lowerType.contains('torn') ||
+        lowerType.contains('damage')) {
+      severity = 'Medium';
+    }
+
+    final blockchainStatus =
+        json['blockchain_status']?.toString() ?? 'not_submitted';
 
     return DefectRecord(
       id: 'DEF-${json['id']}',
       title: title,
-      status: 'Pending', // Default
-      date: DateTime.tryParse(json['timestamp']?.toString() ?? '') ?? DateTime.now(),
+      status: lowerType == 'normal' ? 'Resolved' : 'Pending',
+      date: DateTime.tryParse(json['timestamp']?.toString() ?? '') ??
+          DateTime.now(),
       severity: severity,
       shipmentId: json['shipment_id']?.toString() ?? 'Unknown',
       assetId: json['item_type']?.toString() ?? 'Unknown Asset',
-      description: json['explanation']?.toString() ?? 'No description provided.',
+      description:
+          json['explanation']?.toString() ?? 'No description provided.',
       locationName: json['damage_location']?.toString() ?? 'Unknown Location',
       latitude: 0.0,
       longitude: 0.0,
+      confidence: _asDouble(json['confidence']),
       shipmentHash: json['shipment_hash']?.toString() ?? '',
       evidenceHash: json['evidence_hash']?.toString() ?? '',
+      blockchainStatus: blockchainStatus,
+      blockchainTxHash: json['blockchain_tx_hash']?.toString() ?? '',
+      blockchainError: json['blockchain_error']?.toString() ?? '',
     );
+  }
+
+  static double _asDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    return double.tryParse(value?.toString() ?? '') ?? 0.0;
+  }
+
+  static String _formatLabel(String value) {
+    return value
+        .replaceAll('_', ' ')
+        .split(' ')
+        .where((part) => part.isNotEmpty)
+        .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
+        .join(' ');
   }
 }
 
@@ -95,6 +139,7 @@ class BlockchainEvent {
   final String hash;
   final String statusColor; // 'blue', 'red', 'green', 'grey'
   final bool isCompleted;
+  final bool opensOnEtherscan;
 
   BlockchainEvent({
     required this.title,
@@ -103,6 +148,7 @@ class BlockchainEvent {
     required this.hash,
     required this.statusColor,
     this.isCompleted = true,
+    this.opensOnEtherscan = false,
   });
 }
 
@@ -134,30 +180,45 @@ class DashboardController extends GetxController {
   // Global route definitions
   static const routeJapanToKlang = [
     LatLng(35.4437, 139.6380), // Yokohama, Japan
-    LatLng(25.0, 122.0),       // East China Sea (Waypoint)
+    LatLng(25.0, 122.0), // East China Sea (Waypoint)
     LatLng(13.0805, 100.8872), // Laem Chabang, Thailand
-    LatLng(6.0, 102.5),        // Gulf of Thailand (Waypoint)
-    LatLng(3.0014, 101.3934),  // Port Klang, Malaysia
+    LatLng(6.0, 102.5), // Gulf of Thailand (Waypoint)
+    LatLng(3.0014, 101.3934), // Port Klang, Malaysia
   ];
 
   static const routeChinaToSingapore = [
     LatLng(31.2304, 121.4737), // Shanghai, China
-    LatLng(24.0, 119.0),       // Taiwan Strait (Waypoint)
+    LatLng(24.0, 119.0), // Taiwan Strait (Waypoint)
     LatLng(10.7626, 106.6601), // Ho Chi Minh, Vietnam
-    LatLng(1.3521, 103.8198),  // Singapore
+    LatLng(1.3521, 103.8198), // Singapore
   ];
 
   static const routeIndiaToKlang = [
     LatLng(18.9220, 72.8347), // Mumbai, India
-    LatLng(6.9271, 79.8612),  // Colombo, Sri Lanka
-    LatLng(5.0, 95.0),        // Andaman Sea (Waypoint)
+    LatLng(6.9271, 79.8612), // Colombo, Sri Lanka
+    LatLng(5.0, 95.0), // Andaman Sea (Waypoint)
     LatLng(3.0014, 101.3934), // Port Klang, Malaysia
   ];
 
   final liveShipments = <String, Rx<LiveShipment>>{
-    'SHP-99201': LiveShipment(id: 'SHP-99201', route: routeJapanToKlang, color: Colors.blue, speed: 0.02).obs,
-    'SHP-99180': LiveShipment(id: 'SHP-99180', route: routeChinaToSingapore, color: Colors.orange, speed: 0.015).obs,
-    'SHP-99155': LiveShipment(id: 'SHP-99155', route: routeIndiaToKlang, color: Colors.purple, speed: 0.025).obs,
+    'SHP-99201': LiveShipment(
+            id: 'SHP-99201',
+            route: routeJapanToKlang,
+            color: Colors.blue,
+            speed: 0.02)
+        .obs,
+    'SHP-99180': LiveShipment(
+            id: 'SHP-99180',
+            route: routeChinaToSingapore,
+            color: Colors.orange,
+            speed: 0.015)
+        .obs,
+    'SHP-99155': LiveShipment(
+            id: 'SHP-99155',
+            route: routeIndiaToKlang,
+            color: Colors.purple,
+            speed: 0.025)
+        .obs,
   };
 
   final hasDamageAlert = false.obs;
@@ -172,7 +233,9 @@ class DashboardController extends GetxController {
   }
 
   String get baseUrl {
-    return Platform.isAndroid ? 'http://10.0.2.2:8000' : 'http://127.0.0.1:8000';
+    return Platform.isAndroid
+        ? 'http://10.0.2.2:8000'
+        : 'http://127.0.0.1:8000';
   }
 
   Future<void> checkBackendHealth() async {
@@ -187,8 +250,23 @@ class DashboardController extends GetxController {
   }
 
   String _formatDate(DateTime date) {
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    String hour = date.hour > 12 ? '${date.hour - 12}' : (date.hour == 0 ? '12' : '${date.hour}');
+    const months = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec'
+    ];
+    String hour = date.hour > 12
+        ? '${date.hour - 12}'
+        : (date.hour == 0 ? '12' : '${date.hour}');
     String min = date.minute.toString().padLeft(2, '0');
     String amPm = date.hour >= 12 ? 'PM' : 'AM';
     return '${months[date.month - 1]} ${date.day}, ${date.year} - $hour:$min $amPm';
@@ -199,57 +277,84 @@ class DashboardController extends GetxController {
       final response = await http.get(Uri.parse('$baseUrl/reports'));
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        recentDefects.value = data.map((json) => DefectRecord.fromJson(json)).toList();
-        
+        recentDefects.value =
+            data.map((json) => DefectRecord.fromJson(json)).toList();
+
         totalDefects.value = recentDefects.length;
-        pendingDefects.value = recentDefects.where((d) => d.status == 'Pending').length;
-        resolvedDefects.value = recentDefects.where((d) => d.status == 'Resolved').length;
+        pendingDefects.value =
+            recentDefects.where((d) => d.status == 'Pending').length;
+        resolvedDefects.value =
+            recentDefects.where((d) => d.status == 'Resolved').length;
 
         // Build dynamic blockchain data from the reports
         final Map<String, BlockchainShipment> newBlockchainData = {};
         final Set<String> newAvailableShipments = {};
-        
+
         final grouped = <String, List<DefectRecord>>{};
         for (var defect in recentDefects) {
           grouped.putIfAbsent(defect.shipmentId, () => []).add(defect);
         }
-        
+
         for (var entry in grouped.entries) {
           final shipmentId = entry.key;
           final defects = entry.value;
-          defects.sort((a, b) => a.date.compareTo(b.date)); // Sort chronologically
-          
+          defects
+              .sort((a, b) => a.date.compareTo(b.date)); // Sort chronologically
+
           final assetId = defects.first.assetId;
-          final mainTxHash = defects.first.shipmentHash.isNotEmpty ? defects.first.shipmentHash : '0x0000000000000000000000000000000000000000';
-          
+          String mainTxHash = '';
+          for (final defect in defects) {
+            if (defect.blockchainTxHash.isNotEmpty &&
+                defect.blockchainTxHash != 'null') {
+              mainTxHash = defect.blockchainTxHash;
+              break;
+            }
+          }
+
           final events = <BlockchainEvent>[];
           // Initial event
           events.add(BlockchainEvent(
             title: 'Initial Record Created',
-            subtitle: 'Origin Port, Smart Contract Deployed',
-            date: _formatDate(defects.first.date.subtract(const Duration(minutes: 30))),
-            hash: mainTxHash,
+            subtitle: 'Shipment proof prepared for smart contract anchoring',
+            date: _formatDate(
+                defects.first.date.subtract(const Duration(minutes: 30))),
+            hash: defects.first.shipmentHash.isNotEmpty
+                ? defects.first.shipmentHash
+                : 'Pending...',
             statusColor: 'blue',
           ));
-          
+
           for (var defect in defects) {
-             String color = 'red';
-             if (defect.status == 'Resolved') color = 'green';
-             else if (defect.severity == 'Low') color = 'orange';
+            String color = 'red';
+            if (defect.status == 'Resolved')
+              color = 'green';
+            else if (defect.severity == 'Low') color = 'orange';
+            if (defect.blockchainStatus == 'submitted') color = 'green';
+            if (defect.blockchainStatus == 'failed') color = 'red';
+            if (defect.blockchainStatus == 'not_configured') color = 'grey';
 
-             String subtitle = defect.description.length > 40 
-                ? '${defect.description.substring(0, 40)}...' 
+            String subtitle = defect.description.length > 40
+                ? '${defect.description.substring(0, 40)}...'
                 : defect.description;
+            subtitle = '$subtitle (${defect.blockchainStatus})';
 
-             events.add(BlockchainEvent(
-               title: defect.title,
-               subtitle: subtitle,
-               date: _formatDate(defect.date),
-               hash: defect.evidenceHash.isNotEmpty ? defect.evidenceHash : '0x...',
-               statusColor: color,
-             ));
+            events.add(BlockchainEvent(
+              title: defect.title,
+              subtitle: subtitle,
+              date: _formatDate(defect.date),
+              hash: defect.blockchainTxHash.isNotEmpty &&
+                      defect.blockchainTxHash != 'null'
+                  ? defect.blockchainTxHash
+                  : (defect.evidenceHash.isNotEmpty
+                      ? defect.evidenceHash
+                      : 'Pending...'),
+              statusColor: color,
+              isCompleted: defect.blockchainStatus == 'submitted',
+              opensOnEtherscan: defect.blockchainTxHash.isNotEmpty &&
+                  defect.blockchainTxHash != 'null',
+            ));
           }
-          
+
           events.add(BlockchainEvent(
             title: 'Arriving Record (Pending)',
             subtitle: 'Destination Port',
@@ -258,7 +363,7 @@ class DashboardController extends GetxController {
             statusColor: 'grey',
             isCompleted: false,
           ));
-          
+
           newBlockchainData[shipmentId] = BlockchainShipment(
             shipmentId: shipmentId,
             assetId: assetId,
@@ -267,11 +372,12 @@ class DashboardController extends GetxController {
           );
           newAvailableShipments.add(shipmentId);
         }
-        
+
         blockchainData.value = newBlockchainData;
         availableShipments.value = newAvailableShipments.toList();
-        
-        if (availableShipments.isNotEmpty && !availableShipments.contains(selectedBlockchainShipment.value)) {
+
+        if (availableShipments.isNotEmpty &&
+            !availableShipments.contains(selectedBlockchainShipment.value)) {
           selectedBlockchainShipment.value = availableShipments.first;
         }
       } else {
@@ -311,13 +417,17 @@ class DashboardController extends GetxController {
           shipment.segmentProgress = 0.0;
 
           // Trigger alert for Japan route at Thailand (segment 2)
-          if (shipment.id == 'SHP-99201' && shipment.currentSegment == 2 && !hasDamageAlert.value) {
+          if (shipment.id == 'SHP-99201' &&
+              shipment.currentSegment == 2 &&
+              !hasDamageAlert.value) {
             triggerDamageAlert();
           }
         } else {
           // Interpolate
-          final lat = start.latitude + (end.latitude - start.latitude) * shipment.segmentProgress;
-          final lng = start.longitude + (end.longitude - start.longitude) * shipment.segmentProgress;
+          final lat = start.latitude +
+              (end.latitude - start.latitude) * shipment.segmentProgress;
+          final lng = start.longitude +
+              (end.longitude - start.longitude) * shipment.segmentProgress;
           shipment.currentLocation = LatLng(lat, lng);
         }
         shipmentRx.refresh();
@@ -379,15 +489,17 @@ class DashboardController extends GetxController {
       final query = searchQuery.value.toLowerCase();
       result = result.where((defect) {
         return defect.title.toLowerCase().contains(query) ||
-               defect.id.toLowerCase().contains(query) ||
-               defect.shipmentId.toLowerCase().contains(query) ||
-               defect.assetId.toLowerCase().contains(query);
+            defect.id.toLowerCase().contains(query) ||
+            defect.shipmentId.toLowerCase().contains(query) ||
+            defect.assetId.toLowerCase().contains(query);
       }).toList();
     }
 
     // 2. Filter by Status
     if (statusFilter.value != 'All') {
-      result = result.where((defect) => defect.status == statusFilter.value).toList();
+      result = result
+          .where((defect) => defect.status == statusFilter.value)
+          .toList();
     }
 
     // 3. Sort
@@ -398,14 +510,21 @@ class DashboardController extends GetxController {
     } else if (sortOption.value == 'Severity (High-Low)') {
       int severityValue(String s) {
         switch (s) {
-          case 'Critical': return 4;
-          case 'High': return 3;
-          case 'Medium': return 2;
-          case 'Low': return 1;
-          default: return 0;
+          case 'Critical':
+            return 4;
+          case 'High':
+            return 3;
+          case 'Medium':
+            return 2;
+          case 'Low':
+            return 1;
+          default:
+            return 0;
         }
       }
-      result.sort((a, b) => severityValue(b.severity).compareTo(severityValue(a.severity)));
+
+      result.sort((a, b) =>
+          severityValue(b.severity).compareTo(severityValue(a.severity)));
     }
 
     return result;
