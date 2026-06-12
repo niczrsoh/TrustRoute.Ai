@@ -13,12 +13,10 @@ from .inference import Prediction
 
 GRANITE_DEFECT_PROMPT = """
 Carefully inspect the entire image for any visible damage. If there are multiple items and ANY of them are damaged, you MUST report the damage instead of normal.
-Reply with exactly one label only:
-normal, crack, dent, or leakage.
-normal=no visible defect in the entire image.
-crack=crack/split/fracture/broken pieces.
-dent=deformation/crushed/bent/impact.
-leakage=liquid/stain/wet/spill.
+Reply with exactly one short condition label only.
+Do not choose from predefined classes.
+Use your own concise label based on what is visible.
+Examples: normal, crushed_package, torn_box, wet_package, broken_glass, scratched_car, dented_panel, leaked_liquid.
 """.strip()
 
 

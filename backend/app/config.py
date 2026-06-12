@@ -24,6 +24,15 @@ class Settings:
         "yes",
     }
     granite_max_new_tokens: int = int(os.getenv("SLT_GRANITE_MAX_NEW_TOKENS", "8"))
+    ethereum_rpc_url: str | None = os.getenv("ETH_RPC_URL")
+    ethereum_private_key: str | None = os.getenv("ETH_PRIVATE_KEY")
+    ethereum_chain_id: int = int(os.getenv("ETH_CHAIN_ID", "11155111"))
+    defect_registry_address: str | None = os.getenv("DEFECT_REGISTRY_ADDRESS")
+    auto_anchor_reports: bool = os.getenv("SLT_AUTO_ANCHOR_REPORTS", "true").lower() in {
+        "1",
+        "true",
+        "yes",
+    }
 
     @property
     def upload_dir(self) -> Path:

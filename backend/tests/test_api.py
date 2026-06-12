@@ -48,6 +48,9 @@ def test_predict_stores_report() -> None:
         assert payload["shipment_hash"].startswith("0x")
         assert payload["evidence_hash"].startswith("0x")
         assert payload["image_hash"].startswith("0x")
+        assert payload["blockchain_status"] == "not_configured"
+        assert payload["blockchain_tx_hash"] is None
+        assert "ETH_RPC_URL" in payload["blockchain_error"]
         assert payload["scores"]
 
         reports = client.get("/reports").json()
@@ -59,6 +62,11 @@ def test_predict_stores_report() -> None:
         assert blockchain_payload["evidence_hash"] == payload["evidence_hash"]
         assert blockchain_payload["defect_type_chain_id"] == payload["defect_type_chain_id"]
         assert blockchain_payload["confidence_bps"] == payload["confidence_bps"]
+
+        anchor_response = client.post(f"/reports/{payload['id']}/blockchain/anchor").json()
+        assert anchor_response["status"] == "not_configured"
+        assert anchor_response["tx_hash"] is None
+        assert anchor_response["payload"]["evidence_hash"] == payload["evidence_hash"]
 
 
 def test_classes_are_dynamic_for_granite_labels() -> None:

@@ -5,7 +5,8 @@ Image-first MVP for the defect detection pipeline:
 1. Upload a package/shipment image.
 2. Run defect inference.
 3. Store the result in SQLite.
-4. Read prediction history for the dashboard.
+4. Automatically submit the compact report proof to the smart contract when Ethereum settings are configured.
+5. Read prediction history for the dashboard.
 
 The final hardware plan is a Raspberry Pi with an HD camera. For the MVP, the Pi should send captured still images to the backend. Later, video can be added by sampling frames from the Pi camera stream and sending those frames through the same classification pipeline.
 
@@ -37,6 +38,28 @@ Open:
 
 - API health: http://127.0.0.1:8000/health
 - API docs: http://127.0.0.1:8000/docs
+
+## Ethereum Auto-Anchoring
+
+After `POST /predict` saves an analysis report, the backend now attempts to call the smart contract function `anchorReport`.
+
+Set these environment variables before starting the server:
+
+```powershell
+$env:ETH_RPC_URL = "https://sepolia.infura.io/v3/YOUR_KEY"
+$env:ETH_PRIVATE_KEY = "YOUR_BACKEND_WALLET_PRIVATE_KEY"
+$env:ETH_CHAIN_ID = "11155111"
+$env:DEFECT_REGISTRY_ADDRESS = "0xYOUR_DEPLOYED_CONTRACT"
+$env:SLT_AUTO_ANCHOR_REPORTS = "true"
+```
+
+If these are missing, prediction still succeeds and the report is marked `blockchain_status: not_configured`.
+
+Manual retry endpoint:
+
+```text
+POST /reports/{report_id}/blockchain/anchor
+```
 
 ## AI Classifier
 
@@ -142,6 +165,8 @@ Granite Vision classifier plan: `docs/granite_vision_classifier.md`.
 - `POST /predict` - upload an image, infer defect, store report
 - `GET /reports` - list report history
 - `GET /reports/{report_id}` - get one report
+- `GET /reports/{report_id}/blockchain` - get smart contract payload
+- `POST /reports/{report_id}/blockchain/anchor` - submit/retry smart contract transaction
 
 ## Dataset Plan For Real Model
 

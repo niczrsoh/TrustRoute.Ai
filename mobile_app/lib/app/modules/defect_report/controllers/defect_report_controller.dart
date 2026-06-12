@@ -8,7 +8,9 @@ import 'package:trust_route/app/modules/dashboard/controllers/dashboard_controll
 
 class DefectReportController extends GetxController {
   String get baseUrl {
-    return Platform.isAndroid ? 'http://10.0.2.2:8000' : 'http://127.0.0.1:8000';
+    return Platform.isAndroid
+        ? 'http://10.0.2.2:8000'
+        : 'http://127.0.0.1:8000';
   }
 
   DashboardController get dashboard => Get.find<DashboardController>();
@@ -34,6 +36,20 @@ class DefectReportController extends GetxController {
   final analysisData = <String, dynamic>{}.obs;
 
   final ImagePicker _picker = ImagePicker();
+
+  double _asDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    return double.tryParse(value?.toString() ?? '') ?? 0.0;
+  }
+
+  String _formatLabel(String value) {
+    return value
+        .replaceAll('_', ' ')
+        .split(' ')
+        .where((part) => part.isNotEmpty)
+        .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
+        .join(' ');
+  }
 
   @override
   void onInit() {
@@ -87,44 +103,52 @@ class DefectReportController extends GetxController {
 
     try {
       final uri = Uri.parse('$baseUrl/predict');
-      
+
       var request = http.MultipartRequest('POST', uri);
       request.fields['shipment_id'] = selectedShipment.value;
-      request.files.add(await http.MultipartFile.fromPath('image', capturedImagePath.value));
-      
+      request.files.add(
+          await http.MultipartFile.fromPath('image', capturedImagePath.value));
+
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
-      
+
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         analysisData.value = data; // Store full object
         final String defectType = data['defect_type'].toString();
-        // Capitalize defect type (e.g., 'crack' -> 'Crack')
-        final String formattedDefectType = defectType.isNotEmpty 
-            ? '${defectType[0].toUpperCase()}${defectType.substring(1)}'
-            : defectType;
-            
-        final confidence = ((data['confidence'] as double) * 100).toStringAsFixed(1);
+        final String formattedDefectType = _formatLabel(defectType);
+        final confidence =
+            (_asDouble(data['confidence']) * 100).toStringAsFixed(1);
         final explanation = data['explanation'];
-        
+        final blockchainStatus =
+            data['blockchain_status']?.toString() ?? 'not_submitted';
+
         if (defectType.toLowerCase() == 'normal') {
-          aiAnalysisResult.value = 'Clear: Normal package condition detected.\nConfidence: $confidence%';
+          aiAnalysisResult.value =
+              'Clear: Normal package condition detected.\nConfidence: $confidence%\nBlockchain: $blockchainStatus';
         } else {
-          aiAnalysisResult.value = 'Defect Detected: $formattedDefectType\nConfidence: $confidence%\nExplanation: $explanation';
+          aiAnalysisResult.value =
+              'Defect Detected: $formattedDefectType\nConfidence: $confidence%\nBlockchain: $blockchainStatus\nExplanation: $explanation';
+        }
+
+        if (Get.isRegistered<DashboardController>()) {
+          await Get.find<DashboardController>().fetchReports();
         }
 
         Get.snackbar(
-          'Analysis Complete', 
+          'Analysis Complete',
           'Report submitted successfully.',
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Colors.green,
           colorText: Colors.white,
         );
       } else {
-        aiAnalysisResult.value = 'Analysis Failed. Status Code: ${response.statusCode}\n${response.body}';
+        aiAnalysisResult.value =
+            'Analysis Failed. Status Code: ${response.statusCode}\n${response.body}';
       }
     } catch (e) {
-      aiAnalysisResult.value = 'Analysis Failed: Unable to reach backend.\nEnsure the Python FastAPI server is running.';
+      aiAnalysisResult.value =
+          'Analysis Failed: Unable to reach backend.\nEnsure the Python FastAPI server is running.';
       print('API Error: $e');
     } finally {
       isAnalyzing.value = false;

@@ -152,9 +152,11 @@ class DefectReportView extends GetView<DefectReportController> {
                           top: 8,
                           right: 8,
                           child: IconButton(
-                            icon: const Icon(Icons.close, color: AppTheme.accentRed),
+                            icon: const Icon(Icons.close,
+                                color: AppTheme.accentRed),
                             onPressed: controller.removeImage,
-                            style: IconButton.styleFrom(backgroundColor: Colors.white),
+                            style: IconButton.styleFrom(
+                                backgroundColor: Colors.white),
                           ),
                         ),
                       ],
@@ -175,7 +177,7 @@ class DefectReportView extends GetView<DefectReportController> {
                   ),
                 );
               }
-              
+
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -194,14 +196,16 @@ class DefectReportView extends GetView<DefectReportController> {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: controller.aiAnalysisResult.value.contains('Clear') 
-                              ? Colors.green.shade50 
+                          color: controller.aiAnalysisResult.value
+                                  .contains('Clear')
+                              ? Colors.green.shade50
                               : Colors.red.shade50,
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: controller.aiAnalysisResult.value.contains('Clear') 
-                              ? Colors.green 
-                              : AppTheme.accentRed,
+                            color: controller.aiAnalysisResult.value
+                                    .contains('Clear')
+                                ? Colors.green
+                                : AppTheme.accentRed,
                           ),
                         ),
                         child: Column(
@@ -210,11 +214,13 @@ class DefectReportView extends GetView<DefectReportController> {
                             Row(
                               children: [
                                 Icon(
-                                  controller.aiAnalysisResult.value.contains('Clear') 
-                                      ? Icons.check_circle 
-                                      : Icons.auto_awesome, 
-                                  color: controller.aiAnalysisResult.value.contains('Clear') 
-                                      ? Colors.green 
+                                  controller.aiAnalysisResult.value
+                                          .contains('Clear')
+                                      ? Icons.check_circle
+                                      : Icons.auto_awesome,
+                                  color: controller.aiAnalysisResult.value
+                                          .contains('Clear')
+                                      ? Colors.green
                                       : AppTheme.accentRed,
                                 ),
                                 const SizedBox(width: 8),
@@ -347,14 +353,34 @@ class DefectReportView extends GetView<DefectReportController> {
     );
   }
 
+  double _asDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    return double.tryParse(value?.toString() ?? '') ?? 0.0;
+  }
+
+  String _formatLabel(String value) {
+    return value
+        .replaceAll('_', ' ')
+        .split(' ')
+        .where((part) => part.isNotEmpty)
+        .map((part) => '${part[0].toUpperCase()}${part.substring(1)}')
+        .join(' ');
+  }
+
   Widget _buildResultRow(String label, String value) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(width: 120, child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87))),
-          Expanded(child: Text(value, style: const TextStyle(color: Colors.black54))),
+          SizedBox(
+              width: 120,
+              child: Text(label,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, color: Colors.black87))),
+          Expanded(
+              child:
+                  Text(value, style: const TextStyle(color: Colors.black54))),
         ],
       ),
     );
@@ -366,8 +392,17 @@ class DefectReportView extends GetView<DefectReportController> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(width: 120, child: Text(label, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87))),
-          Expanded(child: Text(hash, style: const TextStyle(fontFamily: 'monospace', fontSize: 12, color: Colors.blueGrey))),
+          SizedBox(
+              width: 120,
+              child: Text(label,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, color: Colors.black87))),
+          Expanded(
+              child: Text(hash,
+                  style: const TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 12,
+                      color: Colors.blueGrey))),
         ],
       ),
     );

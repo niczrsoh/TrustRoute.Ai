@@ -27,6 +27,9 @@ CREATE TABLE IF NOT EXISTS defect_reports (
     confidence_bps INTEGER,
     defect_type_chain_id INTEGER,
     detected_at_unix INTEGER,
+    blockchain_tx_hash TEXT,
+    blockchain_status TEXT NOT NULL DEFAULT 'not_submitted',
+    blockchain_error TEXT,
     image_path TEXT NOT NULL,
     created_at TEXT NOT NULL
 );
@@ -42,6 +45,9 @@ OPTIONAL_COLUMNS = {
     "confidence_bps": "INTEGER",
     "defect_type_chain_id": "INTEGER",
     "detected_at_unix": "INTEGER",
+    "blockchain_tx_hash": "TEXT",
+    "blockchain_status": "TEXT NOT NULL DEFAULT 'not_submitted'",
+    "blockchain_error": "TEXT",
 }
 
 
@@ -211,3 +217,29 @@ def get_report(report_id: int) -> dict[str, Any] | None:
             (report_id,),
         ).fetchone()
     return row_to_dict(row)
+
+
+def update_report_blockchain_status(
+    report_id: int,
+    *,
+    status: str,
+    tx_hash: str | None = None,
+    error: str | None = None,
+) -> dict[str, Any]:
+    with get_connection() as connection:
+        connection.execute(
+            """
+            UPDATE defect_reports
+            SET blockchain_status = ?, blockchain_tx_hash = ?, blockchain_error = ?
+            WHERE id = ?
+            """,
+            (status, tx_hash, error, report_id),
+        )
+        row = connection.execute(
+            "SELECT * FROM defect_reports WHERE id = ?",
+            (report_id,),
+        ).fetchone()
+    report = row_to_dict(row)
+    if report is None:
+        raise RuntimeError("Failed to read updated report")
+    return report

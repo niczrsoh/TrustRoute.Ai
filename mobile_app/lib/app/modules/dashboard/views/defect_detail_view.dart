@@ -43,7 +43,8 @@ class DefectDetailView extends StatelessWidget {
   }
 
   Widget _buildStatusHeader() {
-    Color statusColor = defect.status == 'Resolved' ? Colors.green : Colors.orange;
+    Color statusColor =
+        defect.status == 'Resolved' ? Colors.green : Colors.orange;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -120,6 +121,8 @@ class DefectDetailView extends StatelessWidget {
           const Divider(height: 32),
           _buildInfoRow('Date Reported', _formatDateFull(defect.date)),
           _buildInfoRow('Severity', defect.severity, isSeverity: true),
+          _buildInfoRow(
+              'Confidence', '${(defect.confidence * 100).toStringAsFixed(1)}%'),
           _buildInfoRow('Shipment ID', defect.shipmentId),
           _buildInfoRow('Asset ID', 'ASSET-204-X' ),
           _buildInfoRow('Location', 'Warehouse B, Port Klang' ),
@@ -143,10 +146,17 @@ class DefectDetailView extends StatelessWidget {
     Color? valueColor;
     if (isSeverity) {
       switch (value) {
-        case 'Critical': valueColor = Colors.red; break;
-        case 'High': valueColor = Colors.orange; break;
-        case 'Medium': valueColor = Colors.amber; break;
-        default: valueColor = Colors.blue;
+        case 'Critical':
+          valueColor = Colors.red;
+          break;
+        case 'High':
+          valueColor = Colors.orange;
+          break;
+        case 'Medium':
+          valueColor = Colors.amber;
+          break;
+        default:
+          valueColor = Colors.blue;
       }
     }
 
@@ -159,7 +169,8 @@ class DefectDetailView extends StatelessWidget {
             width: 120,
             child: Text(
               label,
-              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey),
+              style: const TextStyle(
+                  fontWeight: FontWeight.bold, color: Colors.grey),
             ),
           ),
           Expanded(
@@ -243,14 +254,30 @@ class DefectDetailView extends StatelessWidget {
               SizedBox(width: 8),
               Text(
                 'Blockchain Verified',
-                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold),
               ),
             ],
           ),
           const SizedBox(height: 16),
-          _buildHashRow('Block', '14285922'),
+          _buildHashRow('Status', defect.blockchainStatus),
           const SizedBox(height: 8),
-          _buildHashRow('Tx Hash', '0x8f3c...9a12b'),
+          _buildHashRow(
+              'Tx Hash',
+              defect.blockchainTxHash.isNotEmpty &&
+                      defect.blockchainTxHash != 'null'
+                  ? defect.blockchainTxHash
+                  : 'Pending'),
+          const SizedBox(height: 8),
+          _buildHashRow('Evidence',
+              defect.evidenceHash.isNotEmpty ? defect.evidenceHash : 'Pending'),
+          if (defect.blockchainError.isNotEmpty &&
+              defect.blockchainError != 'null') ...[
+            const SizedBox(height: 8),
+            _buildHashRow('Error', defect.blockchainError),
+          ],
         ],
       ),
     );
@@ -258,15 +285,26 @@ class DefectDetailView extends StatelessWidget {
 
   Widget _buildHashRow(String label, String value) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: TextStyle(color: Colors.grey[400], fontSize: 14),
+        SizedBox(
+          width: 80,
+          child: Text(
+            label,
+            style: TextStyle(color: Colors.grey[400], fontSize: 14),
+          ),
         ),
-        Text(
-          value,
-          style: const TextStyle(color: Colors.greenAccent, fontSize: 14, fontFamily: 'monospace'),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            value,
+            textAlign: TextAlign.right,
+            softWrap: true,
+            style: const TextStyle(
+                color: Colors.greenAccent,
+                fontSize: 14,
+                fontFamily: 'monospace'),
+          ),
         ),
       ],
     );

@@ -20,7 +20,8 @@ class DashboardView extends GetView<DashboardController> {
           String title = 'Dashboard';
           if (controller.selectedIndex.value == 1) title = 'Live Monitoring';
           if (controller.selectedIndex.value == 2) title = 'Report Defect';
-          if (controller.selectedIndex.value == 3) title = 'Blockchain Evidence';
+          if (controller.selectedIndex.value == 3)
+            title = 'Blockchain Evidence';
           if (controller.selectedIndex.value == 4) title = 'Profile';
           return Row(
             children: [
@@ -111,8 +112,6 @@ class DashboardView extends GetView<DashboardController> {
     );
   }
 
-
-
   Widget _buildFilterControls() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -177,54 +176,56 @@ class DashboardView extends GetView<DashboardController> {
           children: [
             Expanded(
               child: Obx(() => Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(color: Colors.grey.shade300),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    isExpanded: true,
-                    value: controller.statusFilter.value,
-                    items: ['All', 'Pending', 'Resolved'].map((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(value),
-                      );
-                    }).toList(),
-                    onChanged: (val) {
-                      if (val != null) controller.updateStatusFilter(val);
-                    },
-                  ),
-                ),
-              )),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        isExpanded: true,
+                        value: controller.statusFilter.value,
+                        items:
+                            ['All', 'Pending', 'Resolved'].map((String value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(value),
+                          );
+                        }).toList(),
+                        onChanged: (val) {
+                          if (val != null) controller.updateStatusFilter(val);
+                        },
+                      ),
+                    ),
+                  )),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Obx(() => Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  border: Border.all(color: Colors.grey.shade300),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    isExpanded: true,
-                    value: controller.sortOption.value,
-                    items: ['Newest', 'Oldest', 'Severity (High-Low)'].map((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(value, overflow: TextOverflow.ellipsis),
-                      );
-                    }).toList(),
-                    onChanged: (val) {
-                      if (val != null) controller.updateSortOption(val);
-                    },
-                  ),
-                ),
-              )),
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      border: Border.all(color: Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        isExpanded: true,
+                        value: controller.sortOption.value,
+                        items: ['Newest', 'Oldest', 'Severity (High-Low)']
+                            .map((String value) {
+                          return DropdownMenuItem<String>(
+                            value: value,
+                            child: Text(value, overflow: TextOverflow.ellipsis),
+                          );
+                        }).toList(),
+                        onChanged: (val) {
+                          if (val != null) controller.updateSortOption(val);
+                        },
+                      ),
+                    ),
+                  )),
             ),
           ],
         ),
@@ -239,7 +240,8 @@ class DashboardView extends GetView<DashboardController> {
         return const Padding(
           padding: EdgeInsets.all(32.0),
           child: Center(
-            child: Text('No defects found.', style: TextStyle(color: Colors.grey)),
+            child:
+                Text('No defects found.', style: TextStyle(color: Colors.grey)),
           ),
         );
       }
@@ -267,7 +269,8 @@ class DashboardView extends GetView<DashboardController> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: _getSeverityColor(defect.severity).withOpacity(0.1),
+                      color:
+                          _getSeverityColor(defect.severity).withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
@@ -288,14 +291,15 @@ class DashboardView extends GetView<DashboardController> {
                         const SizedBox(height: 4),
                         Text(
                           '${defect.id} • ${_formatDate(defect.date)}',
-                          style: TextStyle(
-                              color: Colors.grey[600], fontSize: 12),
+                          style:
+                              TextStyle(color: Colors.grey[600], fontSize: 12),
                         ),
                       ],
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: defect.status == 'Resolved'
                           ? Colors.green.withOpacity(0.1)
@@ -327,7 +331,8 @@ class DashboardView extends GetView<DashboardController> {
       final selectedId = controller.selectedBlockchainShipment.value;
       final shipment = controller.blockchainData[selectedId];
 
-      if (shipment == null) return const Center(child: Text('No blockchain data available.'));
+      if (shipment == null)
+        return const Center(child: Text('No blockchain data available.'));
 
       return SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -337,7 +342,10 @@ class DashboardView extends GetView<DashboardController> {
             // Shipment Selector
             const Text(
               'Select Shipment',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey),
+              style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey),
             ),
             const SizedBox(height: 8),
             Container(
@@ -382,12 +390,16 @@ class DashboardView extends GetView<DashboardController> {
                   const SizedBox(height: 12),
                   const Text(
                     'Ethereum Blockchain Record',
-                    style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Immutable evidence trail for Asset ID: ${shipment.assetId}',
-                    style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
+                    style: TextStyle(
+                        color: Colors.white.withOpacity(0.8), fontSize: 14),
                     textAlign: TextAlign.center,
                   ),
                 ],
@@ -408,10 +420,18 @@ class DashboardView extends GetView<DashboardController> {
 
               Color nodeColor;
               switch (event.statusColor) {
-                case 'blue': nodeColor = Colors.blue; break;
-                case 'red': nodeColor = Colors.red; break;
-                case 'green': nodeColor = Colors.green; break;
-                default: nodeColor = Colors.grey; break;
+                case 'blue':
+                  nodeColor = Colors.blue;
+                  break;
+                case 'red':
+                  nodeColor = Colors.red;
+                  break;
+                case 'green':
+                  nodeColor = Colors.green;
+                  break;
+                default:
+                  nodeColor = Colors.grey;
+                  break;
               }
 
               return _buildTimelineNode(
@@ -422,6 +442,7 @@ class DashboardView extends GetView<DashboardController> {
                 isLast: isLast,
                 color: nodeColor,
                 isCompleted: event.isCompleted,
+                opensOnEtherscan: event.opensOnEtherscan,
               );
             }).toList(),
 
@@ -430,11 +451,19 @@ class DashboardView extends GetView<DashboardController> {
               width: double.infinity,
               child: ElevatedButton.icon(
                 onPressed: () async {
-                  final url = Uri.parse('https://sepolia.etherscan.io/tx/${shipment.mainTxHash}');
+                  if (shipment.mainTxHash.isEmpty) {
+                    Get.snackbar('Pending',
+                        'No Sepolia transaction hash has been submitted yet.');
+                    return;
+                  }
+                  final url = Uri.parse(
+                      'https://sepolia.etherscan.io/tx/${shipment.mainTxHash}');
                   try {
-                    final success = await launchUrl(url, mode: LaunchMode.inAppWebView);
+                    final success =
+                        await launchUrl(url, mode: LaunchMode.inAppWebView);
                     if (!success) {
-                      Get.snackbar('Error', 'Could not launch Sepolia Etherscan');
+                      Get.snackbar(
+                          'Error', 'Could not launch Sepolia Etherscan');
                     }
                   } catch (e) {
                     Get.snackbar('Error', 'Could not launch Sepolia Etherscan');
@@ -491,6 +520,7 @@ class DashboardView extends GetView<DashboardController> {
     required bool isLast,
     required Color color,
     bool isCompleted = true,
+    bool opensOnEtherscan = false,
   }) {
     return IntrinsicHeight(
       child: Row(
@@ -526,29 +556,40 @@ class DashboardView extends GetView<DashboardController> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  Text(title,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 16)),
                   const SizedBox(height: 4),
-                  Text(subtitle, style: TextStyle(color: Colors.grey.shade700, fontSize: 14)),
+                  Text(subtitle,
+                      style:
+                          TextStyle(color: Colors.grey.shade700, fontSize: 14)),
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(Icons.access_time, size: 14, color: Colors.grey),
+                      const Icon(Icons.access_time,
+                          size: 14, color: Colors.grey),
                       const SizedBox(width: 4),
-                      Text(date, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+                      Text(date,
+                          style: const TextStyle(
+                              color: Colors.grey, fontSize: 12)),
                     ],
                   ),
                   const SizedBox(height: 8),
                   GestureDetector(
                     onTap: () async {
-                      if (hash.startsWith('0x') && hash != '0x0000000000000000000000000000000000000000') {
-                        final url = Uri.parse('https://sepolia.etherscan.io/tx/$hash');
+                      if (opensOnEtherscan) {
+                        final url =
+                            Uri.parse('https://sepolia.etherscan.io/tx/$hash');
                         try {
-                          final success = await launchUrl(url, mode: LaunchMode.inAppWebView);
+                          final success = await launchUrl(url,
+                              mode: LaunchMode.inAppWebView);
                           if (!success) {
-                            Get.snackbar('Error', 'Could not launch Sepolia Etherscan');
+                            Get.snackbar(
+                                'Error', 'Could not launch Sepolia Etherscan');
                           }
                         } catch (e) {
-                          Get.snackbar('Error', 'Could not launch Sepolia Etherscan');
+                          Get.snackbar(
+                              'Error', 'Could not launch Sepolia Etherscan');
                         }
                       }
                     },
@@ -615,7 +656,8 @@ class DashboardView extends GetView<DashboardController> {
                 const CircleAvatar(
                   radius: 50,
                   backgroundColor: Colors.white,
-                  child: Icon(Icons.person, size: 60, color: AppTheme.primaryNavy),
+                  child:
+                      Icon(Icons.person, size: 60, color: AppTheme.primaryNavy),
                 ),
                 const SizedBox(height: 16),
                 const Text(
@@ -636,7 +678,8 @@ class DashboardView extends GetView<DashboardController> {
                 ),
                 const SizedBox(height: 16),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(20),
@@ -726,7 +769,10 @@ class DashboardView extends GetView<DashboardController> {
     );
   }
 
-  Widget _buildProfileMenuItem({required IconData icon, required String title, required VoidCallback onTap}) {
+  Widget _buildProfileMenuItem(
+      {required IconData icon,
+      required String title,
+      required VoidCallback onTap}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -746,7 +792,8 @@ class DashboardView extends GetView<DashboardController> {
           title,
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+        trailing:
+            const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
         onTap: onTap,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(12),
@@ -871,27 +918,43 @@ class DashboardView extends GetView<DashboardController> {
                 ),
                 titlesData: FlTitlesData(
                   show: true,
-                  rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  rightTitles:
+                      AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  topTitles:
+                      AxisTitles(sideTitles: SideTitles(showTitles: false)),
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
                       reservedSize: 30,
                       interval: 1,
                       getTitlesWidget: (value, meta) {
-                        const style = TextStyle(color: Colors.grey, fontSize: 12);
+                        const style =
+                            TextStyle(color: Colors.grey, fontSize: 12);
                         Widget text;
                         switch (value.toInt()) {
-                          case 0: text = const Text('Jan', style: style); break;
-                          case 1: text = const Text('Feb', style: style); break;
-                          case 2: text = const Text('Mar', style: style); break;
-                          case 3: text = const Text('Apr', style: style); break;
-                          case 4: text = const Text('May', style: style); break;
-                          case 5: text = const Text('Jun', style: style); break;
-                          default: text = const Text('', style: style); break;
+                          case 0:
+                            text = const Text('Jan', style: style);
+                            break;
+                          case 1:
+                            text = const Text('Feb', style: style);
+                            break;
+                          case 2:
+                            text = const Text('Mar', style: style);
+                            break;
+                          case 3:
+                            text = const Text('Apr', style: style);
+                            break;
+                          case 4:
+                            text = const Text('May', style: style);
+                            break;
+                          case 5:
+                            text = const Text('Jun', style: style);
+                            break;
+                          default:
+                            text = const Text('', style: style);
+                            break;
                         }
-                        return SideTitleWidget( meta: meta,
-                        child: text);
+                        return SideTitleWidget(meta: meta, child: text);
                       },
                     ),
                   ),
@@ -905,7 +968,8 @@ class DashboardView extends GetView<DashboardController> {
                           meta: meta,
                           child: Text(
                             value.toInt().toString(),
-                            style: const TextStyle(color: Colors.grey, fontSize: 12),
+                            style: const TextStyle(
+                                color: Colors.grey, fontSize: 12),
                           ),
                         );
                       },
@@ -945,21 +1009,31 @@ class DashboardView extends GetView<DashboardController> {
 
   Color _getSeverityColor(String severity) {
     switch (severity) {
-      case 'Critical': return Colors.red;
-      case 'High': return Colors.orange;
-      case 'Medium': return Colors.amber;
-      case 'Low': return Colors.green;
-      default: return Colors.grey;
+      case 'Critical':
+        return Colors.red;
+      case 'High':
+        return Colors.orange;
+      case 'Medium':
+        return Colors.amber;
+      case 'Low':
+        return Colors.green;
+      default:
+        return Colors.grey;
     }
   }
 
   IconData _getSeverityIcon(String severity) {
     switch (severity) {
-      case 'Critical': return Icons.error;
-      case 'High': return Icons.warning;
-      case 'Medium': return Icons.info;
-      case 'Low': return Icons.check_circle;
-      default: return Icons.help;
+      case 'Critical':
+        return Icons.error;
+      case 'High':
+        return Icons.warning;
+      case 'Medium':
+        return Icons.info;
+      case 'Low':
+        return Icons.check_circle;
+      default:
+        return Icons.help;
     }
   }
 

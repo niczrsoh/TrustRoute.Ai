@@ -10,9 +10,17 @@ from PIL import UnidentifiedImageError
 
 from .ai import create_classifier
 from .blockchain import build_blockchain_fields
+from .blockchain_client import BlockchainNotConfigured, send_anchor_report
 from .config import settings
-from .database import get_report, init_db, insert_report, list_reports
-from .schemas import BlockchainAnchorPayload, ClassesResponse, HealthResponse, PredictionResponse, ReportResponse
+from .database import get_report, init_db, insert_report, list_reports, update_report_blockchain_status
+from .schemas import (
+    BlockchainAnchorPayload,
+    BlockchainTransactionResponse,
+    ClassesResponse,
+    HealthResponse,
+    PredictionResponse,
+    ReportResponse,
+)
 
 
 ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
@@ -76,6 +84,8 @@ async def predict(
         raw_model_output=prediction.raw_model_output,
         image_path=saved_path,
     )
+    if settings.auto_anchor_reports:
+        report = anchor_report_after_prediction(report)
 
     return prediction_payload(report, prediction.scores)
 
@@ -107,6 +117,21 @@ def report_blockchain_payload(report_id: int) -> dict[str, object]:
         "defect_type_chain_id": report["defect_type_chain_id"],
         "confidence_bps": report["confidence_bps"],
         "detected_at_unix": report["detected_at_unix"],
+    }
+
+
+@app.post("/reports/{report_id}/blockchain/anchor", response_model=BlockchainTransactionResponse)
+def anchor_report_on_chain(report_id: int) -> dict[str, object]:
+    report = get_report(report_id)
+    if report is None:
+        raise HTTPException(status_code=404, detail="Report not found")
+    updated = anchor_report_after_prediction(report)
+    payload = report_blockchain_payload(report_id)
+    return {
+        "status": updated.get("blockchain_status") or "not_submitted",
+        "tx_hash": updated.get("blockchain_tx_hash"),
+        "message": updated.get("blockchain_error"),
+        "payload": payload,
     }
 
 
@@ -162,9 +187,45 @@ def report_payload(report: dict[str, object]) -> dict[str, object]:
         "confidence_bps": report["confidence_bps"],
         "defect_type_chain_id": report["defect_type_chain_id"],
         "detected_at_unix": report["detected_at_unix"],
+        "blockchain_status": report.get("blockchain_status") or "not_submitted",
+        "blockchain_tx_hash": report.get("blockchain_tx_hash"),
+        "blockchain_error": report.get("blockchain_error"),
         "image_path": report["image_path"],
         "timestamp": report["created_at"],
     }
+
+
+def anchor_report_after_prediction(report: dict[str, object]) -> dict[str, object]:
+    report = report_with_blockchain_fields(report)
+    payload = {
+        "report_id": report["id"],
+        "contract_function": "anchorReport",
+        "shipment_hash": report["shipment_hash"],
+        "evidence_hash": report["evidence_hash"],
+        "defect_type_chain_id": report["defect_type_chain_id"],
+        "confidence_bps": report["confidence_bps"],
+        "detected_at_unix": report["detected_at_unix"],
+    }
+    try:
+        tx_hash = send_anchor_report(payload)
+    except BlockchainNotConfigured as exc:
+        return update_report_blockchain_status(
+            int(report["id"]),
+            status="not_configured",
+            error=str(exc),
+        )
+    except Exception as exc:
+        return update_report_blockchain_status(
+            int(report["id"]),
+            status="failed",
+            error=str(exc),
+        )
+    return update_report_blockchain_status(
+        int(report["id"]),
+        status="submitted",
+        tx_hash=tx_hash,
+        error=None,
+    )
 
 
 def report_with_blockchain_fields(report: dict[str, object]) -> dict[str, object]:
