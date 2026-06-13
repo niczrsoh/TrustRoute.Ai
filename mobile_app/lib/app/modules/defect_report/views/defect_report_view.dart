@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:trust_route/app/core/theme/app_theme.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../controllers/defect_report_controller.dart';
 
 class DefectReportView extends GetView<DefectReportController> {
@@ -389,6 +390,14 @@ class DefectReportView extends GetView<DefectReportController> {
                   'Image Hash',
                   data['image_hash']?.toString() ?? '-',
                 ),
+                if (data['blockchain_tx_hash'] != null &&
+                    data['blockchain_tx_hash'].toString().isNotEmpty &&
+                    data['blockchain_tx_hash'].toString() != 'null')
+                  _buildHashRow(
+                    'Transaction Hash',
+                    data['blockchain_tx_hash'].toString(),
+                    isLink: true,
+                  ),
                 _buildResultRow(
                   'Chain ID',
                   data['defect_type_chain_id']?.toString() ?? '-',
@@ -439,7 +448,7 @@ class DefectReportView extends GetView<DefectReportController> {
     );
   }
 
-  Widget _buildHashRow(String label, String hash) {
+  Widget _buildHashRow(String label, String hash, {bool isLink = false}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
       child: Row(
@@ -456,14 +465,27 @@ class DefectReportView extends GetView<DefectReportController> {
             ),
           ),
           Expanded(
-            child: Text(
-              hash,
-              style: const TextStyle(
-                fontFamily: 'monospace',
-                fontSize: 12,
-                color: Colors.blueGrey,
-              ),
-            ),
+            child: isLink && hash != '-'
+                ? GestureDetector(
+                    onTap: () => launchUrl(Uri.parse('https://sepolia.etherscan.io/tx/$hash')),
+                    child: Text(
+                      hash,
+                      style: const TextStyle(
+                        fontFamily: 'monospace',
+                        fontSize: 12,
+                        color: Colors.blue,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  )
+                : Text(
+                    hash,
+                    style: const TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 12,
+                      color: Colors.blueGrey,
+                    ),
+                  ),
           ),
         ],
       ),
