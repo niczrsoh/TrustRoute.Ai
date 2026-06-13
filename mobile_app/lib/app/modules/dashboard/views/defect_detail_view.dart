@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:get/get.dart';
 import 'package:trust_route/app/core/theme/app_theme.dart';
 import '../controllers/dashboard_controller.dart';
 
@@ -13,7 +12,14 @@ class DefectDetailView extends StatelessWidget {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text('Defect Details', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: -0.5, color: AppTheme.primaryNavy)),
+        title: const Text(
+          'Defect Details',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            letterSpacing: -0.5,
+            color: AppTheme.primaryNavy,
+          ),
+        ),
         elevation: 0,
         backgroundColor: Colors.transparent,
         iconTheme: const IconThemeData(color: AppTheme.primaryNavy),
@@ -43,8 +49,9 @@ class DefectDetailView extends StatelessWidget {
   }
 
   Widget _buildStatusHeader() {
-    Color statusColor =
-        defect.status == 'Resolved' ? Colors.green : Colors.orange;
+    Color statusColor = defect.status == 'Resolved'
+        ? Colors.green
+        : Colors.orange;
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -79,18 +86,12 @@ class DefectDetailView extends StatelessWidget {
           Text(
             defect.title,
             textAlign: TextAlign.center,
-            style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
           Text(
             defect.id,
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey[600],
-            ),
+            style: TextStyle(fontSize: 16, color: Colors.grey[600]),
           ),
         ],
       ),
@@ -122,10 +123,12 @@ class DefectDetailView extends StatelessWidget {
           _buildInfoRow('Date Reported', _formatDateFull(defect.date)),
           _buildInfoRow('Severity', defect.severity, isSeverity: true),
           _buildInfoRow(
-              'Confidence', '${(defect.confidence * 100).toStringAsFixed(1)}%'),
+            'Confidence',
+            '${(defect.confidence * 100).toStringAsFixed(1)}%',
+          ),
           _buildInfoRow('Shipment ID', defect.shipmentId),
-          _buildInfoRow('Asset ID', 'ASSET-204-X' ),
-          _buildInfoRow('Location', 'Warehouse B, Port Klang' ),
+          _buildInfoRow('Asset ID', 'ASSET-204-X'),
+          _buildInfoRow('Location', 'Warehouse B, Port Klang'),
           _buildInfoRow('Coordinates', '3.001401345930843, 101.39339287116556'),
           const SizedBox(height: 16),
           const Text(
@@ -170,7 +173,9 @@ class DefectDetailView extends StatelessWidget {
             child: Text(
               label,
               style: const TextStyle(
-                  fontWeight: FontWeight.bold, color: Colors.grey),
+                fontWeight: FontWeight.bold,
+                color: Colors.grey,
+              ),
             ),
           ),
           Expanded(
@@ -188,12 +193,6 @@ class DefectDetailView extends StatelessWidget {
   }
 
   Widget _buildImageGallery() {
-    //dummy images
-    List<String> dummyImages = [
-      'assets/images/dummy_defect_1.jpg',
-      'assets/images/dummy_defect_2.jpg',
-      'assets/images/dummy_defect_3.jpg',
-    ];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -255,9 +254,10 @@ class DefectDetailView extends StatelessWidget {
               Text(
                 'Blockchain Verified',
                 style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold),
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ],
           ),
@@ -265,14 +265,17 @@ class DefectDetailView extends StatelessWidget {
           _buildHashRow('Status', defect.blockchainStatus),
           const SizedBox(height: 8),
           _buildHashRow(
-              'Tx Hash',
-              defect.blockchainTxHash.isNotEmpty &&
-                      defect.blockchainTxHash != 'null'
-                  ? defect.blockchainTxHash
-                  : 'Pending'),
+            'Tx Hash',
+            defect.blockchainTxHash.isNotEmpty &&
+                    defect.blockchainTxHash != 'null'
+                ? defect.blockchainTxHash
+                : 'Pending',
+          ),
           const SizedBox(height: 8),
-          _buildHashRow('Evidence',
-              defect.evidenceHash.isNotEmpty ? defect.evidenceHash : 'Pending'),
+          _buildHashRow(
+            'Evidence',
+            defect.evidenceHash.isNotEmpty ? defect.evidenceHash : 'Pending',
+          ),
           if (defect.blockchainError.isNotEmpty &&
               defect.blockchainError != 'null') ...[
             const SizedBox(height: 8),
@@ -301,9 +304,10 @@ class DefectDetailView extends StatelessWidget {
             textAlign: TextAlign.right,
             softWrap: true,
             style: const TextStyle(
-                color: Colors.greenAccent,
-                fontSize: 14,
-                fontFamily: 'monospace'),
+              color: Colors.greenAccent,
+              fontSize: 14,
+              fontFamily: 'monospace',
+            ),
           ),
         ),
       ],

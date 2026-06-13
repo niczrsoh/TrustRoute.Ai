@@ -98,15 +98,28 @@ class DefectRecord {
       id: 'DEF-${json['id']}',
       title: title,
       status: lowerType == 'normal' ? 'Resolved' : 'Pending',
-      date: DateTime.tryParse(json['timestamp']?.toString() ?? '') ??
+      date:
+          DateTime.tryParse(json['timestamp']?.toString() ?? '') ??
           DateTime.now(),
       severity: severity,
       shipmentId: json['shipment_id']?.toString() ?? 'Unknown',
-      assetId: (json['item_type'] != null && json['item_type'].toString().isNotEmpty && json['item_type'].toString() != 'null') ? json['item_type'].toString() : 'ASSET-204-X (Default)',
-      description: json['explanation']?.toString() ?? 'No description provided.',
-      locationName: (json['damage_location'] != null && json['damage_location'].toString().isNotEmpty && json['damage_location'].toString() != 'null') ? json['damage_location'].toString() : 'Warehouse B, Port Klang',
+      assetId:
+          (json['item_type'] != null &&
+              json['item_type'].toString().isNotEmpty &&
+              json['item_type'].toString() != 'null')
+          ? json['item_type'].toString()
+          : 'ASSET-204-X (Default)',
+      description:
+          json['explanation']?.toString() ?? 'No description provided.',
+      locationName:
+          (json['damage_location'] != null &&
+              json['damage_location'].toString().isNotEmpty &&
+              json['damage_location'].toString() != 'null')
+          ? json['damage_location'].toString()
+          : 'Warehouse B, Port Klang',
       latitude: 3.0014,
       longitude: 101.3934,
+      confidence: _asDouble(json['confidence']),
       shipmentHash: json['shipment_hash']?.toString() ?? '',
       evidenceHash: json['evidence_hash']?.toString() ?? '',
       blockchainStatus: blockchainStatus,
@@ -200,23 +213,23 @@ class DashboardController extends GetxController {
 
   final liveShipments = <String, Rx<LiveShipment>>{
     'SHP-99201': LiveShipment(
-            id: 'SHP-99201',
-            route: routeJapanToKlang,
-            color: Colors.blue,
-            speed: 0.02)
-        .obs,
+      id: 'SHP-99201',
+      route: routeJapanToKlang,
+      color: Colors.blue,
+      speed: 0.02,
+    ).obs,
     'SHP-99180': LiveShipment(
-            id: 'SHP-99180',
-            route: routeChinaToSingapore,
-            color: Colors.orange,
-            speed: 0.015)
-        .obs,
+      id: 'SHP-99180',
+      route: routeChinaToSingapore,
+      color: Colors.orange,
+      speed: 0.015,
+    ).obs,
     'SHP-99155': LiveShipment(
-            id: 'SHP-99155',
-            route: routeIndiaToKlang,
-            color: Colors.purple,
-            speed: 0.025)
-        .obs,
+      id: 'SHP-99155',
+      route: routeIndiaToKlang,
+      color: Colors.purple,
+      speed: 0.025,
+    ).obs,
   };
 
   final hasDamageAlert = false.obs;
@@ -260,7 +273,7 @@ class DashboardController extends GetxController {
       'Sep',
       'Oct',
       'Nov',
-      'Dec'
+      'Dec',
     ];
     String hour = date.hour > 12
         ? '${date.hour - 12}'
@@ -275,14 +288,17 @@ class DashboardController extends GetxController {
       final response = await http.get(Uri.parse('$baseUrl/reports'));
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        recentDefects.value =
-            data.map((json) => DefectRecord.fromJson(json)).toList();
+        recentDefects.value = data
+            .map((json) => DefectRecord.fromJson(json))
+            .toList();
 
         totalDefects.value = recentDefects.length;
-        pendingDefects.value =
-            recentDefects.where((d) => d.status == 'Pending').length;
-        resolvedDefects.value =
-            recentDefects.where((d) => d.status == 'Resolved').length;
+        pendingDefects.value = recentDefects
+            .where((d) => d.status == 'Pending')
+            .length;
+        resolvedDefects.value = recentDefects
+            .where((d) => d.status == 'Resolved')
+            .length;
 
         // Build dynamic blockchain data from the reports
         final Map<String, BlockchainShipment> newBlockchainData = {};
@@ -296,8 +312,9 @@ class DashboardController extends GetxController {
         for (var entry in grouped.entries) {
           final shipmentId = entry.key;
           final defects = entry.value;
-          defects
-              .sort((a, b) => a.date.compareTo(b.date)); // Sort chronologically
+          defects.sort(
+            (a, b) => a.date.compareTo(b.date),
+          ); // Sort chronologically
 
           final assetId = defects.first.assetId;
           String mainTxHash = '';
@@ -311,22 +328,27 @@ class DashboardController extends GetxController {
 
           final events = <BlockchainEvent>[];
           // Initial event
-          events.add(BlockchainEvent(
-            title: 'Initial Record Created',
-            subtitle: 'Shipment proof prepared for smart contract anchoring',
-            date: _formatDate(
-                defects.first.date.subtract(const Duration(minutes: 30))),
-            hash: defects.first.shipmentHash.isNotEmpty
-                ? defects.first.shipmentHash
-                : 'Pending...',
-            statusColor: 'blue',
-          ));
+          events.add(
+            BlockchainEvent(
+              title: 'Initial Record Created',
+              subtitle: 'Shipment proof prepared for smart contract anchoring',
+              date: _formatDate(
+                defects.first.date.subtract(const Duration(minutes: 30)),
+              ),
+              hash: defects.first.shipmentHash.isNotEmpty
+                  ? defects.first.shipmentHash
+                  : 'Pending...',
+              statusColor: 'blue',
+            ),
+          );
 
           for (var defect in defects) {
             String color = 'red';
-            if (defect.status == 'Resolved')
+            if (defect.status == 'Resolved') {
               color = 'green';
-            else if (defect.severity == 'Low') color = 'orange';
+            } else if (defect.severity == 'Low') {
+              color = 'orange';
+            }
             if (defect.blockchainStatus == 'submitted') color = 'green';
             if (defect.blockchainStatus == 'failed') color = 'red';
             if (defect.blockchainStatus == 'not_configured') color = 'grey';
@@ -336,31 +358,37 @@ class DashboardController extends GetxController {
                 : defect.description;
             subtitle = '$subtitle (${defect.blockchainStatus})';
 
-            events.add(BlockchainEvent(
-              title: defect.title,
-              subtitle: subtitle,
-              date: _formatDate(defect.date),
-              hash: defect.blockchainTxHash.isNotEmpty &&
-                      defect.blockchainTxHash != 'null'
-                  ? defect.blockchainTxHash
-                  : (defect.evidenceHash.isNotEmpty
-                      ? defect.evidenceHash
-                      : 'Pending...'),
-              statusColor: color,
-              isCompleted: defect.blockchainStatus == 'submitted',
-              opensOnEtherscan: defect.blockchainTxHash.isNotEmpty &&
-                  defect.blockchainTxHash != 'null',
-            ));
+            events.add(
+              BlockchainEvent(
+                title: defect.title,
+                subtitle: subtitle,
+                date: _formatDate(defect.date),
+                hash:
+                    defect.blockchainTxHash.isNotEmpty &&
+                        defect.blockchainTxHash != 'null'
+                    ? defect.blockchainTxHash
+                    : (defect.evidenceHash.isNotEmpty
+                          ? defect.evidenceHash
+                          : 'Pending...'),
+                statusColor: color,
+                isCompleted: defect.blockchainStatus == 'submitted',
+                opensOnEtherscan:
+                    defect.blockchainTxHash.isNotEmpty &&
+                    defect.blockchainTxHash != 'null',
+              ),
+            );
           }
 
-          events.add(BlockchainEvent(
-            title: 'Arriving Record (Pending)',
-            subtitle: 'Destination Port',
-            date: 'Awaiting Arrival',
-            hash: 'Pending...',
-            statusColor: 'grey',
-            isCompleted: false,
-          ));
+          events.add(
+            BlockchainEvent(
+              title: 'Arriving Record (Pending)',
+              subtitle: 'Destination Port',
+              date: 'Awaiting Arrival',
+              hash: 'Pending...',
+              statusColor: 'grey',
+              isCompleted: false,
+            ),
+          );
 
           newBlockchainData[shipmentId] = BlockchainShipment(
             shipmentId: shipmentId,
@@ -422,9 +450,11 @@ class DashboardController extends GetxController {
           }
         } else {
           // Interpolate
-          final lat = start.latitude +
+          final lat =
+              start.latitude +
               (end.latitude - start.latitude) * shipment.segmentProgress;
-          final lng = start.longitude +
+          final lng =
+              start.longitude +
               (end.longitude - start.longitude) * shipment.segmentProgress;
           shipment.currentLocation = LatLng(lat, lng);
         }
@@ -479,7 +509,8 @@ class DashboardController extends GetxController {
   void updateSearchQuery(String query) => searchQuery.value = query;
   void updateStatusFilter(String status) => statusFilter.value = status;
   void updateSortOption(String sort) => sortOption.value = sort;
-  void updateHistoryShipmentFilter(String shipmentId) => historyShipmentFilter.value = shipmentId;
+  void updateHistoryShipmentFilter(String shipmentId) =>
+      historyShipmentFilter.value = shipmentId;
 
   List<DefectRecord> get filteredAndSortedDefects {
     var result = recentDefects.toList();
@@ -487,9 +518,13 @@ class DashboardController extends GetxController {
     // 1. Search
     if (searchQuery.value.isNotEmpty) {
       final q = searchQuery.value.toLowerCase();
-      result = result.where((d) =>
-          d.id.toLowerCase().contains(q) ||
-          d.title.toLowerCase().contains(q)).toList();
+      result = result
+          .where(
+            (d) =>
+                d.id.toLowerCase().contains(q) ||
+                d.title.toLowerCase().contains(q),
+          )
+          .toList();
     }
 
     // 2. Status Filter
@@ -499,7 +534,9 @@ class DashboardController extends GetxController {
 
     // 3. Shipment Filter
     if (historyShipmentFilter.value != 'All') {
-      result = result.where((d) => d.shipmentId == historyShipmentFilter.value).toList();
+      result = result
+          .where((d) => d.shipmentId == historyShipmentFilter.value)
+          .toList();
     }
 
     // 4. Sort
@@ -523,8 +560,10 @@ class DashboardController extends GetxController {
         }
       }
 
-      result.sort((a, b) =>
-          severityValue(b.severity).compareTo(severityValue(a.severity)));
+      result.sort(
+        (a, b) =>
+            severityValue(b.severity).compareTo(severityValue(a.severity)),
+      );
     }
 
     return result;

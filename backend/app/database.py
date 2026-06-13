@@ -6,7 +6,7 @@ from pathlib import Path
 import sqlite3
 from typing import Any, Iterator
 
-from .blockchain import build_blockchain_fields
+from .blockchain import build_blockchain_fields, build_certificate_fields
 from .config import settings
 
 
@@ -31,6 +31,24 @@ CREATE TABLE IF NOT EXISTS defect_reports (
     blockchain_status TEXT NOT NULL DEFAULT 'not_submitted',
     blockchain_error TEXT,
     image_path TEXT NOT NULL,
+    created_at TEXT NOT NULL
+);
+"""
+
+CERTIFICATE_SCHEMA = """
+CREATE TABLE IF NOT EXISTS delivery_certificates (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    shipment_id TEXT NOT NULL,
+    recipient_reference TEXT NOT NULL,
+    condition_summary TEXT NOT NULL,
+    delivered_at TEXT NOT NULL,
+    shipment_hash TEXT,
+    certificate_hash TEXT,
+    recipient_hash TEXT,
+    condition_hash TEXT,
+    delivered_at_unix INTEGER,
+    blockchain_tx_hash TEXT,
+    blockchain_status TEXT NOT NULL DEFAULT 'not_submitted',
     created_at TEXT NOT NULL
 );
 """
@@ -66,6 +84,7 @@ def get_connection() -> Iterator[sqlite3.Connection]:
 def init_db() -> None:
     with get_connection() as connection:
         connection.execute(SCHEMA)
+        connection.execute(CERTIFICATE_SCHEMA)
         existing_columns = {
             row["name"]
             for row in connection.execute("PRAGMA table_info(defect_reports)").fetchall()
@@ -243,3 +262,99 @@ def update_report_blockchain_status(
     if report is None:
         raise RuntimeError("Failed to read updated report")
     return report
+
+
+def insert_delivery_certificate(
+    *,
+    shipment_id: str,
+    recipient_reference: str,
+    condition_summary: str,
+    delivered_at: str,
+) -> dict[str, Any]:
+    created_at = datetime.now(timezone.utc).isoformat()
+    with get_connection() as connection:
+        cursor = connection.execute(
+            """
+            INSERT INTO delivery_certificates (
+                shipment_id,
+                recipient_reference,
+                condition_summary,
+                delivered_at,
+                created_at
+            )
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (shipment_id, recipient_reference, condition_summary, delivered_at, created_at),
+        )
+        certificate_id = int(cursor.lastrowid)
+        row = connection.execute(
+            "SELECT * FROM delivery_certificates WHERE id = ?",
+            (certificate_id,),
+        ).fetchone()
+        certificate = row_to_dict(row)
+        if certificate is None:
+            raise RuntimeError("Failed to read inserted certificate")
+
+        fields = build_certificate_fields(certificate)
+        connection.execute(
+            """
+            UPDATE delivery_certificates
+            SET
+                shipment_hash = ?,
+                certificate_hash = ?,
+                recipient_hash = ?,
+                condition_hash = ?,
+                delivered_at_unix = ?
+            WHERE id = ?
+            """,
+            (
+                fields["shipment_hash"],
+                fields["certificate_hash"],
+                fields["recipient_hash"],
+                fields["condition_hash"],
+                fields["delivered_at_unix"],
+                certificate_id,
+            ),
+        )
+        row = connection.execute(
+            "SELECT * FROM delivery_certificates WHERE id = ?",
+            (certificate_id,),
+        ).fetchone()
+    certificate = row_to_dict(row)
+    if certificate is None:
+        raise RuntimeError("Failed to read updated certificate")
+    return certificate
+
+
+def get_delivery_certificate(certificate_id: int) -> dict[str, Any] | None:
+    with get_connection() as connection:
+        row = connection.execute(
+            "SELECT * FROM delivery_certificates WHERE id = ?",
+            (certificate_id,),
+        ).fetchone()
+    return row_to_dict(row)
+
+
+def update_certificate_blockchain_status(
+    certificate_id: int,
+    *,
+    status: str,
+    tx_hash: str | None = None,
+) -> dict[str, Any]:
+    with get_connection() as connection:
+        connection.execute(
+            """
+            UPDATE delivery_certificates
+            SET blockchain_tx_hash = ?, blockchain_status = ?
+            WHERE id = ?
+            """,
+            (tx_hash, status, certificate_id),
+        )
+        row = connection.execute(
+            "SELECT * FROM delivery_certificates WHERE id = ?",
+            (certificate_id,),
+        ).fetchone()
+    certificate = row_to_dict(row)
+    if certificate is None:
+        raise RuntimeError("Failed to read updated certificate")
+    return certificate

@@ -79,6 +79,38 @@ def test_classes_are_dynamic_for_granite_labels() -> None:
     assert payload["mode"] == "dynamic"
 
 
+def test_delivery_certificate_payload() -> None:
+    with TestClient(app) as client:
+        response = client.post(
+            "/delivery-certificates",
+            json={
+                "shipment_id": "SHIP-CERT-001",
+                "recipient_reference": "recipient@example.test",
+                "condition_summary": "received with parcel corner damage",
+                "delivered_at": "2026-06-13T08:00:00+00:00",
+            },
+        )
+
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["shipment_id"] == "SHIP-CERT-001"
+        assert payload["shipment_hash"].startswith("0x")
+        assert payload["certificate_hash"].startswith("0x")
+        assert payload["recipient_hash"].startswith("0x")
+        assert payload["condition_hash"].startswith("0x")
+        assert payload["blockchain_status"] == "not_submitted"
+
+        blockchain_payload = client.get(f"/delivery-certificates/{payload['id']}/blockchain").json()
+        assert blockchain_payload["contract_function"] == "issueDeliveryCertificate"
+        assert blockchain_payload["shipment_hash"] == payload["shipment_hash"]
+        assert blockchain_payload["certificate_hash"] == payload["certificate_hash"]
+
+        issue_response = client.post(f"/delivery-certificates/{payload['id']}/blockchain/issue").json()
+        assert issue_response["status"] == "not_configured"
+        assert issue_response["tx_hash"] is None
+        assert "ETH_RPC_URL" in issue_response["message"]
+
+
 def test_rejects_non_image_extension() -> None:
     with TestClient(app) as client:
         response = client.post(

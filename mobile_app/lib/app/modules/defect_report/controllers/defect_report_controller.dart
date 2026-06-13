@@ -107,7 +107,8 @@ class DefectReportController extends GetxController {
       var request = http.MultipartRequest('POST', uri);
       request.fields['shipment_id'] = selectedShipment.value;
       request.files.add(
-          await http.MultipartFile.fromPath('image', capturedImagePath.value));
+        await http.MultipartFile.fromPath('image', capturedImagePath.value),
+      );
 
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
@@ -117,8 +118,8 @@ class DefectReportController extends GetxController {
         analysisData.value = data; // Store full object
         final String defectType = data['defect_type'].toString();
         final String formattedDefectType = _formatLabel(defectType);
-        final confidence =
-            (_asDouble(data['confidence']) * 100).toStringAsFixed(1);
+        final confidence = (_asDouble(data['confidence']) * 100)
+            .toStringAsFixed(1);
         final explanation = data['explanation'];
         final blockchainStatus =
             data['blockchain_status']?.toString() ?? 'not_submitted';

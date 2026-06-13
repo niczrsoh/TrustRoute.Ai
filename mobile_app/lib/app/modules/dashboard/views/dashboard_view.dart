@@ -29,7 +29,11 @@ class DashboardView extends GetView<DashboardController> {
               const SizedBox(width: 12),
               Text(
                 title,
-                style: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: -0.5, color: AppTheme.primaryNavy),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: -0.5,
+                  color: AppTheme.primaryNavy,
+                ),
               ),
             ],
           );
@@ -56,36 +60,59 @@ class DashboardView extends GetView<DashboardController> {
           return _buildProfileTab(context);
         }
       }),
-      bottomNavigationBar: Obx(() => Container(
-        decoration: BoxDecoration(
-          color: AppTheme.cardWhite,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 20,
-              offset: const Offset(0, -5),
+      bottomNavigationBar: Obx(
+        () => Container(
+          decoration: BoxDecoration(
+            color: AppTheme.cardWhite,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 20,
+                offset: const Offset(0, -5),
+              ),
+            ],
+          ),
+          child: BottomNavigationBar(
+            currentIndex: controller.selectedIndex.value,
+            onTap: controller.changeTabIndex,
+            type: BottomNavigationBarType.fixed,
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            selectedItemColor: AppTheme.secondaryBlue,
+            unselectedItemColor: const Color(0xFF94A3B8),
+            selectedLabelStyle: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
             ),
-          ],
+            unselectedLabelStyle: const TextStyle(
+              fontWeight: FontWeight.w500,
+              fontSize: 12,
+            ),
+            items: const [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.dashboard_rounded),
+                label: 'Home',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.map_rounded),
+                label: 'Live',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.add_a_photo_rounded),
+                label: 'Report',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.security_rounded),
+                label: 'Evidence',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.person_rounded),
+                label: 'Profile',
+              ),
+            ],
+          ),
         ),
-        child: BottomNavigationBar(
-          currentIndex: controller.selectedIndex.value,
-          onTap: controller.changeTabIndex,
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          selectedItemColor: AppTheme.secondaryBlue,
-          unselectedItemColor: const Color(0xFF94A3B8),
-          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
-          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500, fontSize: 12),
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.dashboard_rounded), label: 'Home'),
-            BottomNavigationBarItem(icon: Icon(Icons.map_rounded), label: 'Live'),
-            BottomNavigationBarItem(icon: Icon(Icons.add_a_photo_rounded), label: 'Report'),
-            BottomNavigationBarItem(icon: Icon(Icons.security_rounded), label: 'Evidence'),
-            BottomNavigationBarItem(icon: Icon(Icons.person_rounded), label: 'Profile'),
-          ],
-        ),
-      )),
+      ),
     );
   }
 
@@ -146,86 +173,96 @@ class DashboardView extends GetView<DashboardController> {
         ),
         const SizedBox(height: 12),
         // Shipment Filter
-        Obx(() => Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: Colors.grey.shade300),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              isExpanded: true,
-              value: controller.historyShipmentFilter.value,
-              items: ['All', ...controller.availableShipments].map((String value) {
-                return DropdownMenuItem<String>(
-                  value: value,
-                  child: Text(value == 'All' ? 'All Shipments' : 'Shipment: $value'),
-                );
-              }).toList(),
-              onChanged: (val) {
-                if (val != null) controller.updateHistoryShipmentFilter(val);
-              },
+        Obx(
+          () => Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: Colors.grey.shade300),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: DropdownButtonHideUnderline(
+              child: DropdownButton<String>(
+                isExpanded: true,
+                value: controller.historyShipmentFilter.value,
+                items: ['All', ...controller.availableShipments].map((
+                  String value,
+                ) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(
+                      value == 'All' ? 'All Shipments' : 'Shipment: $value',
+                    ),
+                  );
+                }).toList(),
+                onChanged: (val) {
+                  if (val != null) controller.updateHistoryShipmentFilter(val);
+                },
+              ),
             ),
           ),
-        )),
+        ),
         const SizedBox(height: 12),
         // Filters & Sort
         Row(
           children: [
             Expanded(
-              child: Obx(() => Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      border: Border.all(color: Colors.grey.shade300),
-                      borderRadius: BorderRadius.circular(12),
+              child: Obx(
+                () => Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border.all(color: Colors.grey.shade300),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      isExpanded: true,
+                      value: controller.statusFilter.value,
+                      items: ['All', 'Pending', 'Resolved'].map((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(value),
+                        );
+                      }).toList(),
+                      onChanged: (val) {
+                        if (val != null) controller.updateStatusFilter(val);
+                      },
                     ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        isExpanded: true,
-                        value: controller.statusFilter.value,
-                        items:
-                            ['All', 'Pending', 'Resolved'].map((String value) {
-                          return DropdownMenuItem<String>(
-                            value: value,
-                            child: Text(value),
-                          );
-                        }).toList(),
-                        onChanged: (val) {
-                          if (val != null) controller.updateStatusFilter(val);
-                        },
-                      ),
-                    ),
-                  )),
+                  ),
+                ),
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
-              child: Obx(() => Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      border: Border.all(color: Colors.grey.shade300),
-                      borderRadius: BorderRadius.circular(12),
+              child: Obx(
+                () => Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border.all(color: Colors.grey.shade300),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      isExpanded: true,
+                      value: controller.sortOption.value,
+                      items: ['Newest', 'Oldest', 'Severity (High-Low)'].map((
+                        String value,
+                      ) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(value, overflow: TextOverflow.ellipsis),
+                        );
+                      }).toList(),
+                      onChanged: (val) {
+                        if (val != null) controller.updateSortOption(val);
+                      },
                     ),
-                    child: DropdownButtonHideUnderline(
-                      child: DropdownButton<String>(
-                        isExpanded: true,
-                        value: controller.sortOption.value,
-                        items: ['Newest', 'Oldest', 'Severity (High-Low)']
-                            .map((String value) {
-                          return DropdownMenuItem<String>(
-                            value: value,
-                            child: Text(value, overflow: TextOverflow.ellipsis),
-                          );
-                        }).toList(),
-                        onChanged: (val) {
-                          if (val != null) controller.updateSortOption(val);
-                        },
-                      ),
-                    ),
-                  )),
+                  ),
+                ),
+              ),
             ),
           ],
         ),
@@ -240,8 +277,10 @@ class DashboardView extends GetView<DashboardController> {
         return const Padding(
           padding: EdgeInsets.all(32.0),
           child: Center(
-            child:
-                Text('No defects found.', style: TextStyle(color: Colors.grey)),
+            child: Text(
+              'No defects found.',
+              style: TextStyle(color: Colors.grey),
+            ),
           ),
         );
       }
@@ -269,8 +308,9 @@ class DashboardView extends GetView<DashboardController> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color:
-                          _getSeverityColor(defect.severity).withOpacity(0.1),
+                      color: _getSeverityColor(
+                        defect.severity,
+                      ).withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
@@ -286,20 +326,55 @@ class DashboardView extends GetView<DashboardController> {
                         Text(
                           defect.title,
                           style: const TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 16),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           '${defect.id} • ${_formatDate(defect.date)}',
-                          style:
-                              TextStyle(color: Colors.grey[600], fontSize: 12),
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 12,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${defect.shipmentId} • ${(defect.confidence * 100).toStringAsFixed(1)}% confidence',
+                          style: TextStyle(
+                            color: Colors.grey[700],
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 6),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 6,
+                          children: [
+                            _buildMiniStatusChip(
+                              label: defect.blockchainStatus,
+                              color: _getBlockchainStatusColor(
+                                defect.blockchainStatus,
+                              ),
+                            ),
+                            if (defect.blockchainTxHash.isNotEmpty &&
+                                defect.blockchainTxHash != 'null')
+                              _buildMiniStatusChip(
+                                label: _shortHash(defect.blockchainTxHash),
+                                color: AppTheme.secondaryBlue,
+                              ),
+                          ],
                         ),
                       ],
                     ),
                   ),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: defect.status == 'Resolved'
                           ? Colors.green.withOpacity(0.1)
@@ -343,9 +418,10 @@ class DashboardView extends GetView<DashboardController> {
             const Text(
               'Select Shipment',
               style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey),
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey,
+              ),
             ),
             const SizedBox(height: 8),
             Container(
@@ -391,15 +467,18 @@ class DashboardView extends GetView<DashboardController> {
                   const Text(
                     'Ethereum Blockchain Record',
                     style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold),
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'Immutable evidence trail for Asset ID: ${shipment.assetId}',
                     style: TextStyle(
-                        color: Colors.white.withOpacity(0.8), fontSize: 14),
+                      color: Colors.white.withOpacity(0.8),
+                      fontSize: 14,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                 ],
@@ -452,18 +531,25 @@ class DashboardView extends GetView<DashboardController> {
               child: ElevatedButton.icon(
                 onPressed: () async {
                   if (shipment.mainTxHash.isEmpty) {
-                    Get.snackbar('Pending',
-                        'No Sepolia transaction hash has been submitted yet.');
+                    Get.snackbar(
+                      'Pending',
+                      'No Sepolia transaction hash has been submitted yet.',
+                    );
                     return;
                   }
                   final url = Uri.parse(
-                      'https://sepolia.etherscan.io/tx/${shipment.mainTxHash}');
+                    'https://sepolia.etherscan.io/tx/${shipment.mainTxHash}',
+                  );
                   try {
-                    final success =
-                        await launchUrl(url, mode: LaunchMode.inAppWebView);
+                    final success = await launchUrl(
+                      url,
+                      mode: LaunchMode.inAppWebView,
+                    );
                     if (!success) {
                       Get.snackbar(
-                          'Error', 'Could not launch Sepolia Etherscan');
+                        'Error',
+                        'Could not launch Sepolia Etherscan',
+                      );
                     }
                   } catch (e) {
                     Get.snackbar('Error', 'Could not launch Sepolia Etherscan');
@@ -535,17 +621,20 @@ class DashboardView extends GetView<DashboardController> {
                   shape: BoxShape.circle,
                   color: isCompleted ? color : Colors.transparent,
                   border: Border.all(color: color, width: 3),
-                  boxShadow: isCompleted ? [
-                    BoxShadow(color: color.withOpacity(0.4), blurRadius: 8, spreadRadius: 2)
-                  ] : [],
+                  boxShadow: isCompleted
+                      ? [
+                          BoxShadow(
+                            color: color.withOpacity(0.4),
+                            blurRadius: 8,
+                            spreadRadius: 2,
+                          ),
+                        ]
+                      : [],
                 ),
               ),
               if (!isLast)
                 Expanded(
-                  child: Container(
-                    width: 2,
-                    color: Colors.grey.shade300,
-                  ),
+                  child: Container(width: 2, color: Colors.grey.shade300),
                 ),
             ],
           ),
@@ -556,54 +645,82 @@ class DashboardView extends GetView<DashboardController> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title,
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 16)),
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
                   const SizedBox(height: 4),
-                  Text(subtitle,
-                      style:
-                          TextStyle(color: Colors.grey.shade700, fontSize: 14)),
+                  Text(
+                    subtitle,
+                    style: TextStyle(color: Colors.grey.shade700, fontSize: 14),
+                  ),
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      const Icon(Icons.access_time,
-                          size: 14, color: Colors.grey),
+                      const Icon(
+                        Icons.access_time,
+                        size: 14,
+                        color: Colors.grey,
+                      ),
                       const SizedBox(width: 4),
-                      Text(date,
-                          style: const TextStyle(
-                              color: Colors.grey, fontSize: 12)),
+                      Text(
+                        date,
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 12,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
                   GestureDetector(
                     onTap: () async {
                       if (opensOnEtherscan) {
-                        final url =
-                            Uri.parse('https://sepolia.etherscan.io/tx/$hash');
+                        final url = Uri.parse(
+                          'https://sepolia.etherscan.io/tx/$hash',
+                        );
                         try {
-                          final success = await launchUrl(url,
-                              mode: LaunchMode.inAppWebView);
+                          final success = await launchUrl(
+                            url,
+                            mode: LaunchMode.inAppWebView,
+                          );
                           if (!success) {
                             Get.snackbar(
-                                'Error', 'Could not launch Sepolia Etherscan');
+                              'Error',
+                              'Could not launch Sepolia Etherscan',
+                            );
                           }
                         } catch (e) {
                           Get.snackbar(
-                              'Error', 'Could not launch Sepolia Etherscan');
+                            'Error',
+                            'Could not launch Sepolia Etherscan',
+                          );
                         }
                       }
                     },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: AppTheme.frostBlue.withOpacity(0.4),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppTheme.secondaryBlue.withOpacity(0.2)),
+                        border: Border.all(
+                          color: AppTheme.secondaryBlue.withOpacity(0.2),
+                        ),
                       ),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          Icon(Icons.link, size: 14, color: AppTheme.secondaryBlue),
+                          Icon(
+                            Icons.link,
+                            size: 14,
+                            color: AppTheme.secondaryBlue,
+                          ),
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
@@ -656,8 +773,11 @@ class DashboardView extends GetView<DashboardController> {
                 const CircleAvatar(
                   radius: 50,
                   backgroundColor: Colors.white,
-                  child:
-                      Icon(Icons.person, size: 60, color: AppTheme.primaryNavy),
+                  child: Icon(
+                    Icons.person,
+                    size: 60,
+                    color: AppTheme.primaryNavy,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 const Text(
@@ -671,15 +791,14 @@ class DashboardView extends GetView<DashboardController> {
                 const SizedBox(height: 8),
                 Text(
                   'john.doe@trustroute.com',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.white70,
-                  ),
+                  style: TextStyle(fontSize: 16, color: Colors.white70),
                 ),
                 const SizedBox(height: 16),
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.2),
                     borderRadius: BorderRadius.circular(20),
@@ -703,10 +822,7 @@ class DashboardView extends GetView<DashboardController> {
               children: [
                 const Text(
                   'Account Settings',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
                 _buildProfileMenuItem(
@@ -727,10 +843,7 @@ class DashboardView extends GetView<DashboardController> {
                 const SizedBox(height: 24),
                 const Text(
                   'System',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
                 _buildProfileMenuItem(
@@ -769,10 +882,11 @@ class DashboardView extends GetView<DashboardController> {
     );
   }
 
-  Widget _buildProfileMenuItem(
-      {required IconData icon,
-      required String title,
-      required VoidCallback onTap}) {
+  Widget _buildProfileMenuItem({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+  }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -788,16 +902,14 @@ class DashboardView extends GetView<DashboardController> {
       ),
       child: ListTile(
         leading: Icon(icon, color: AppTheme.primaryNavy),
-        title: Text(
-          title,
-          style: const TextStyle(fontWeight: FontWeight.bold),
+        title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+        trailing: const Icon(
+          Icons.arrow_forward_ios,
+          size: 16,
+          color: Colors.grey,
         ),
-        trailing:
-            const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
         onTap: onTap,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
@@ -835,7 +947,12 @@ class DashboardView extends GetView<DashboardController> {
     );
   }
 
-  Widget _buildStatCard({required String title, required String value, required IconData icon, required List<Color> colors}) {
+  Widget _buildStatCard({
+    required String title,
+    required String value,
+    required IconData icon,
+    required List<Color> colors,
+  }) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -867,12 +984,21 @@ class DashboardView extends GetView<DashboardController> {
           const SizedBox(height: 16),
           Text(
             value,
-            style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white),
+            style: const TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
             title,
-            style: TextStyle(fontSize: 13, color: Colors.white.withOpacity(0.9), height: 1.2, fontWeight: FontWeight.w500),
+            style: TextStyle(
+              fontSize: 13,
+              color: Colors.white.withOpacity(0.9),
+              height: 1.2,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       ),
@@ -910,26 +1036,27 @@ class DashboardView extends GetView<DashboardController> {
                   drawVerticalLine: false,
                   horizontalInterval: 10,
                   getDrawingHorizontalLine: (value) {
-                    return FlLine(
-                      color: Colors.grey[200],
-                      strokeWidth: 1,
-                    );
+                    return FlLine(color: Colors.grey[200], strokeWidth: 1);
                   },
                 ),
                 titlesData: FlTitlesData(
                   show: true,
-                  rightTitles:
-                      AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  topTitles:
-                      AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  rightTitles: AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
+                  topTitles: AxisTitles(
+                    sideTitles: SideTitles(showTitles: false),
+                  ),
                   bottomTitles: AxisTitles(
                     sideTitles: SideTitles(
                       showTitles: true,
                       reservedSize: 30,
                       interval: 1,
                       getTitlesWidget: (value, meta) {
-                        const style =
-                            TextStyle(color: Colors.grey, fontSize: 12);
+                        const style = TextStyle(
+                          color: Colors.grey,
+                          fontSize: 12,
+                        );
                         Widget text;
                         switch (value.toInt()) {
                           case 0:
@@ -969,7 +1096,9 @@ class DashboardView extends GetView<DashboardController> {
                           child: Text(
                             value.toInt().toString(),
                             style: const TextStyle(
-                                color: Colors.grey, fontSize: 12),
+                              color: Colors.grey,
+                              fontSize: 12,
+                            ),
                           ),
                         );
                       },
@@ -1035,6 +1164,43 @@ class DashboardView extends GetView<DashboardController> {
       default:
         return Icons.help;
     }
+  }
+
+  Widget _buildMiniStatusChip({required String label, required Color color}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
+  }
+
+  Color _getBlockchainStatusColor(String status) {
+    switch (status) {
+      case 'submitted':
+        return Colors.green;
+      case 'failed':
+        return Colors.red;
+      case 'not_configured':
+        return Colors.grey;
+      default:
+        return Colors.orange;
+    }
+  }
+
+  String _shortHash(String hash) {
+    if (hash.length <= 14) return hash;
+    return '${hash.substring(0, 8)}...${hash.substring(hash.length - 6)}';
   }
 
   String _formatDate(DateTime date) {

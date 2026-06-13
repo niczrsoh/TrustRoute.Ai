@@ -62,7 +62,39 @@ class BlockchainTransactionResponse(BaseModel):
     status: str
     tx_hash: str | None = None
     message: str | None = None
-    payload: BlockchainAnchorPayload
+    payload: dict
+
+
+class DeliveryCertificateRequest(BaseModel):
+    shipment_id: str
+    recipient_reference: str
+    condition_summary: str = "received"
+    delivered_at: datetime | None = None
+
+
+class DeliveryCertificateResponse(BaseModel):
+    id: int
+    shipment_id: str
+    recipient_reference: str
+    condition_summary: str
+    delivered_at: datetime
+    shipment_hash: str
+    certificate_hash: str
+    recipient_hash: str
+    condition_hash: str
+    delivered_at_unix: int
+    blockchain_tx_hash: str | None = None
+    blockchain_status: str
+
+
+class DeliveryCertificatePayload(BaseModel):
+    certificate_id: int
+    contract_function: str
+    shipment_hash: str
+    certificate_hash: str
+    recipient_hash: str
+    condition_hash: str
+    delivered_at_unix: int
 
 
 class HealthResponse(BaseModel):

@@ -89,3 +89,40 @@ def build_blockchain_fields(report: dict[str, Any], absolute_image_path: Path | 
         "detected_at_unix": timestamp_to_unix(str(report["created_at"])),
         "evidence_string": evidence_string,
     }
+
+
+def build_certificate_string(
+    *,
+    certificate_id: int,
+    shipment_id: str,
+    recipient_reference: str,
+    condition_summary: str,
+    delivered_at: str,
+) -> str:
+    return "|".join(
+        [
+            str(certificate_id),
+            shipment_id,
+            recipient_reference,
+            condition_summary,
+            delivered_at,
+        ]
+    )
+
+
+def build_certificate_fields(certificate: dict[str, Any]) -> dict[str, Any]:
+    certificate_string = build_certificate_string(
+        certificate_id=int(certificate["id"]),
+        shipment_id=str(certificate["shipment_id"]),
+        recipient_reference=str(certificate["recipient_reference"]),
+        condition_summary=str(certificate["condition_summary"]),
+        delivered_at=str(certificate["delivered_at"]),
+    )
+    return {
+        "shipment_hash": keccak_hex(str(certificate["shipment_id"])),
+        "certificate_hash": keccak_hex(certificate_string),
+        "recipient_hash": keccak_hex(str(certificate["recipient_reference"])),
+        "condition_hash": keccak_hex(str(certificate["condition_summary"])),
+        "delivered_at_unix": timestamp_to_unix(str(certificate["delivered_at"])),
+        "certificate_string": certificate_string,
+    }

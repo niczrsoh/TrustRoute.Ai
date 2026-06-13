@@ -15,43 +15,6 @@ class DefectReportView extends GetView<DefectReportController> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // 1. Select Shipment ID
-            // Text(
-            //   'Select Shipment / Asset ID',
-            //   style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            //         fontWeight: FontWeight.bold,
-            //       ),
-            // ),
-            // const SizedBox(height: 8),
-            // Obx(() => Container(
-            //       padding: const EdgeInsets.symmetric(horizontal: 12),
-            //       decoration: BoxDecoration(
-            //         color: Colors.white,
-            //         border: Border.all(color: Colors.grey.shade300),
-            //         borderRadius: BorderRadius.circular(8),
-            //       ),
-            //       child: DropdownButtonHideUnderline(
-            //         child: DropdownButton<String>(
-            //           isExpanded: true,
-            //           value: controller.selectedShipment.value.isNotEmpty
-            //               ? controller.selectedShipment.value
-            //               : null,
-            //           items: controller.dynamicShipments.map((String value) {
-            //             return DropdownMenuItem<String>(
-            //               value: value,
-            //               child: Text(value),
-            //             );
-            //           }).toList(),
-            //           onChanged: (newValue) {
-            //             if (newValue != null) {
-            //               controller.selectedShipment.value = newValue;
-            //             }
-            //           },
-            //         ),
-            //       ),
-            //     )),
-            // const SizedBox(height: 24),
-
             // // 2. Defect History for Selected Shipment
             // Text(
             //   'Defect History',
@@ -88,80 +51,104 @@ class DefectReportView extends GetView<DefectReportController> {
             //   );
             // }),
             // const SizedBox(height: 24),
-
             // // 3. Capture / Upload Image
             Text(
               'Report New Defect',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            Obx(() => controller.capturedImagePath.value.isEmpty
-                ? InkWell(
-                    onTap: controller.captureImage,
-                    child: Container(
-                      height: 180,
-                      decoration: BoxDecoration(
-                        color: AppTheme.frostBlue.withOpacity(0.3),
-                        border: Border.all(color: AppTheme.secondaryBlue.withOpacity(0.4), width: 2),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: AppTheme.cardWhite,
-                              shape: BoxShape.circle,
-                              boxShadow: AppTheme.softShadow,
-                            ),
-                            child: const Icon(Icons.cloud_upload_rounded, size: 40, color: AppTheme.secondaryBlue),
+            Obx(
+              () => controller.capturedImagePath.value.isEmpty
+                  ? InkWell(
+                      onTap: controller.captureImage,
+                      child: Container(
+                        height: 180,
+                        decoration: BoxDecoration(
+                          color: AppTheme.frostBlue.withOpacity(0.3),
+                          border: Border.all(
+                            color: AppTheme.secondaryBlue.withOpacity(0.4),
+                            width: 2,
                           ),
-                          const SizedBox(height: 16),
-                          const Text('Tap to capture or upload image', style: TextStyle(color: AppTheme.primaryNavy, fontWeight: FontWeight.w600, fontSize: 16)),
-                          const SizedBox(height: 8),
-                          Text('Supports JPG, PNG • Max 10MB', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: AppTheme.cardWhite,
+                                shape: BoxShape.circle,
+                                boxShadow: AppTheme.softShadow,
+                              ),
+                              child: const Icon(
+                                Icons.cloud_upload_rounded,
+                                size: 40,
+                                color: AppTheme.secondaryBlue,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            const Text(
+                              'Tap to capture or upload image',
+                              style: TextStyle(
+                                color: AppTheme.primaryNavy,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 16,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Supports JPG, PNG • Max 10MB',
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : Container(
+                      height: 150,
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        color: Colors.black12,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.grey.shade400),
+                      ),
+                      child: Stack(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: SizedBox(
+                              width: double.infinity,
+                              height: double.infinity,
+                              child: Image.file(
+                                File(controller.capturedImagePath.value),
+                                fit: BoxFit.cover,
+                              ),
+                            ),
+                          ),
+                          Positioned(
+                            top: 8,
+                            right: 8,
+                            child: IconButton(
+                              icon: const Icon(
+                                Icons.close,
+                                color: AppTheme.accentRed,
+                              ),
+                              onPressed: controller.removeImage,
+                              style: IconButton.styleFrom(
+                                backgroundColor: Colors.white,
+                              ),
+                            ),
+                          ),
                         ],
                       ),
                     ),
-                  )
-                : Container(
-                    height: 150,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.black12,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey.shade400),
-                    ),
-                    child: Stack(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: SizedBox(
-                            width: double.infinity,
-                            height: double.infinity,
-                            child: Image.file(
-                              File(controller.capturedImagePath.value),
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          top: 8,
-                          right: 8,
-                          child: IconButton(
-                            icon: const Icon(Icons.close,
-                                color: AppTheme.accentRed),
-                            onPressed: controller.removeImage,
-                            style: IconButton.styleFrom(
-                                backgroundColor: Colors.white),
-                          ),
-                        ),
-                      ],
-                    ),
-                  )),
+            ),
             const SizedBox(height: 24),
 
             // 4. Submit & Display AI Result
@@ -196,14 +183,18 @@ class DefectReportView extends GetView<DefectReportController> {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: controller.aiAnalysisResult.value
-                                  .contains('Clear')
+                          color:
+                              controller.aiAnalysisResult.value.contains(
+                                'Clear',
+                              )
                               ? Colors.green.shade50
                               : Colors.red.shade50,
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: controller.aiAnalysisResult.value
-                                    .contains('Clear')
+                            color:
+                                controller.aiAnalysisResult.value.contains(
+                                  'Clear',
+                                )
                                 ? Colors.green
                                 : AppTheme.accentRed,
                           ),
@@ -214,11 +205,13 @@ class DefectReportView extends GetView<DefectReportController> {
                             Row(
                               children: [
                                 Icon(
-                                  controller.aiAnalysisResult.value
-                                          .contains('Clear')
+                                  controller.aiAnalysisResult.value.contains(
+                                        'Clear',
+                                      )
                                       ? Icons.check_circle
                                       : Icons.auto_awesome,
-                                  color: controller.aiAnalysisResult.value
+                                  color:
+                                      controller.aiAnalysisResult.value
                                           .contains('Clear')
                                       ? Colors.green
                                       : AppTheme.accentRed,
@@ -235,7 +228,7 @@ class DefectReportView extends GetView<DefectReportController> {
                           ],
                         ),
                       ),
-                  ]
+                  ],
                 ],
               );
             }),
@@ -248,11 +241,13 @@ class DefectReportView extends GetView<DefectReportController> {
   Widget _buildAnalysisResultCard(Map<String, dynamic> data) {
     final defectType = data['defect_type']?.toString() ?? 'unknown';
     final isClear = defectType.toLowerCase() == 'normal';
-    final formattedDefectType = defectType.isNotEmpty ? '${defectType[0].toUpperCase()}${defectType.substring(1)}' : defectType;
-    final confidence = data['confidence'] != null ? ((data['confidence'] as double) * 100).toStringAsFixed(1) : '0';
-    
+    final formattedDefectType = _formatLabel(defectType);
+    final confidence = (_asDouble(data['confidence']) * 100).toStringAsFixed(1);
+
     final mainColor = isClear ? AppTheme.accentGreen : AppTheme.accentRed;
-    final bgColor = isClear ? AppTheme.accentGreen.withOpacity(0.08) : AppTheme.accentRed.withOpacity(0.08);
+    final bgColor = isClear
+        ? AppTheme.accentGreen.withOpacity(0.08)
+        : AppTheme.accentRed.withOpacity(0.08);
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -286,28 +281,49 @@ class DefectReportView extends GetView<DefectReportController> {
                   children: [
                     const Text(
                       'AI Verification Result',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: AppTheme.primaryNavy),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        color: AppTheme.primaryNavy,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      isClear ? 'Condition Verified: Normal' : 'Defect Detected: $formattedDefectType',
-                      style: TextStyle(color: mainColor, fontWeight: FontWeight.w600, fontSize: 14),
+                      isClear
+                          ? 'Condition Verified: Normal'
+                          : 'Defect Detected: $formattedDefectType',
+                      style: TextStyle(
+                        color: mainColor,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                      ),
                     ),
                   ],
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: AppTheme.primaryNavy,
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
-                    BoxShadow(color: AppTheme.primaryNavy.withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 4))
+                    BoxShadow(
+                      color: AppTheme.primaryNavy.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 4),
+                    ),
                   ],
                 ),
                 child: Text(
                   '$confidence%',
-                  style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
                 ),
               ),
             ],
@@ -315,13 +331,26 @@ class DefectReportView extends GetView<DefectReportController> {
           const SizedBox(height: 24),
           const Divider(height: 1, color: Color(0xFFF1F5F9)),
           const SizedBox(height: 20),
-          _buildResultRow('Shipment ID', data['shipment_id']?.toString() ?? '-'),
+          _buildResultRow(
+            'Shipment ID',
+            data['shipment_id']?.toString() ?? '-',
+          ),
           _buildResultRow('Timestamp', data['timestamp']?.toString() ?? '-'),
-          if (data['item_type'] != null && data['item_type'].toString().isNotEmpty && data['item_type'].toString() != 'null')
-             _buildResultRow('Item Type', data['item_type'].toString()),
-          if (data['damage_location'] != null && data['damage_location'].toString().isNotEmpty && data['damage_location'].toString() != 'null')
-             _buildResultRow('Damage Location', data['damage_location'].toString()),
-          _buildResultRow('Explanation', data['explanation']?.toString() ?? '-'),
+          if (data['item_type'] != null &&
+              data['item_type'].toString().isNotEmpty &&
+              data['item_type'].toString() != 'null')
+            _buildResultRow('Item Type', data['item_type'].toString()),
+          if (data['damage_location'] != null &&
+              data['damage_location'].toString().isNotEmpty &&
+              data['damage_location'].toString() != 'null')
+            _buildResultRow(
+              'Damage Location',
+              data['damage_location'].toString(),
+            ),
+          _buildResultRow(
+            'Explanation',
+            data['explanation']?.toString() ?? '-',
+          ),
           const SizedBox(height: 16),
           Container(
             padding: const EdgeInsets.all(16),
@@ -337,14 +366,33 @@ class DefectReportView extends GetView<DefectReportController> {
                   children: const [
                     Icon(Icons.security, size: 16, color: Color(0xFF64748B)),
                     SizedBox(width: 8),
-                    Text('Blockchain Evidence Data', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF475569))),
+                    Text(
+                      'Blockchain Evidence Data',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        color: Color(0xFF475569),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 12),
-                _buildHashRow('Shipment Hash', data['shipment_hash']?.toString() ?? '-'),
-                _buildHashRow('Evidence Hash', data['evidence_hash']?.toString() ?? '-'),
-                _buildHashRow('Image Hash', data['image_hash']?.toString() ?? '-'),
-                _buildResultRow('Chain ID', data['defect_type_chain_id']?.toString() ?? '-'),
+                _buildHashRow(
+                  'Shipment Hash',
+                  data['shipment_hash']?.toString() ?? '-',
+                ),
+                _buildHashRow(
+                  'Evidence Hash',
+                  data['evidence_hash']?.toString() ?? '-',
+                ),
+                _buildHashRow(
+                  'Image Hash',
+                  data['image_hash']?.toString() ?? '-',
+                ),
+                _buildResultRow(
+                  'Chain ID',
+                  data['defect_type_chain_id']?.toString() ?? '-',
+                ),
               ],
             ),
           ),
@@ -374,13 +422,18 @@ class DefectReportView extends GetView<DefectReportController> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-              width: 120,
-              child: Text(label,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold, color: Colors.black87))),
+            width: 120,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+          ),
           Expanded(
-              child:
-                  Text(value, style: const TextStyle(color: Colors.black54))),
+            child: Text(value, style: const TextStyle(color: Colors.black54)),
+          ),
         ],
       ),
     );
@@ -393,16 +446,25 @@ class DefectReportView extends GetView<DefectReportController> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-              width: 120,
-              child: Text(label,
-                  style: const TextStyle(
-                      fontWeight: FontWeight.bold, color: Colors.black87))),
+            width: 120,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+          ),
           Expanded(
-              child: Text(hash,
-                  style: const TextStyle(
-                      fontFamily: 'monospace',
-                      fontSize: 12,
-                      color: Colors.blueGrey))),
+            child: Text(
+              hash,
+              style: const TextStyle(
+                fontFamily: 'monospace',
+                fontSize: 12,
+                color: Colors.blueGrey,
+              ),
+            ),
+          ),
         ],
       ),
     );

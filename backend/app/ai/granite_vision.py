@@ -181,30 +181,23 @@ class GraniteVisionClassifier:
 
     @staticmethod
     def _normalize_defect_type(value: str) -> str:
-        normalized = value.strip().lower().replace(" ", "_").replace("-", "_")
+        normalized = re.sub(r"[^a-z0-9]+", "_", value.strip().lower()).strip("_")
+        if not normalized:
+            return "unknown_condition"
 
-        aliases = {
-            "crack": ["crack", "broken", "fracture", "split"],
-            "dent": ["dent", "damaged", "deformation", "crushed", "bent", "impact"],
-            "leakage": ["leakage", "wet", "stain", "spillage", "spill", "liquid"],
-            "normal": ["normal", "none", "no_defect", "ok", "fine"]
+        normal_phrases = {
+            "normal",
+            "none",
+            "no_defect",
+            "no_damage",
+            "undamaged",
+            "ok",
+            "fine",
+            "good_condition",
         }
-        
-        # We search for actual defects before 'normal' to avoid false negatives
-        for defect, keywords in aliases.items():
-            if defect == "normal":
-                continue
-            for keyword in keywords:
-                if keyword in normalized:
-                    return defect
-                    
-        # If no defect keywords found, check for normal keywords
-        for keyword in aliases["normal"]:
-            if keyword in normalized:
-                return "normal"
-                
-        # Fallback
-        return "normal"
+        if normalized in normal_phrases:
+            return "normal"
+        return normalized[:80]
 
     @staticmethod
     def _clamp_float(value: Any) -> float:

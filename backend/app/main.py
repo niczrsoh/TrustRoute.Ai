@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 from pathlib import Path
 from uuid import uuid4
 
@@ -10,13 +11,25 @@ from PIL import UnidentifiedImageError
 
 from .ai import create_classifier
 from .blockchain import build_blockchain_fields
-from .blockchain_client import BlockchainNotConfigured, send_anchor_report
+from .blockchain_client import BlockchainNotConfigured, send_anchor_report, send_delivery_certificate
 from .config import settings
-from .database import get_report, init_db, insert_report, list_reports, update_report_blockchain_status
+from .database import (
+    get_delivery_certificate,
+    get_report,
+    init_db,
+    insert_delivery_certificate,
+    insert_report,
+    list_reports,
+    update_certificate_blockchain_status,
+    update_report_blockchain_status,
+)
 from .schemas import (
     BlockchainAnchorPayload,
     BlockchainTransactionResponse,
     ClassesResponse,
+    DeliveryCertificatePayload,
+    DeliveryCertificateRequest,
+    DeliveryCertificateResponse,
     HealthResponse,
     PredictionResponse,
     ReportResponse,
@@ -135,6 +148,64 @@ def anchor_report_on_chain(report_id: int) -> dict[str, object]:
     }
 
 
+@app.post("/delivery-certificates", response_model=DeliveryCertificateResponse)
+def create_delivery_certificate(request: DeliveryCertificateRequest) -> dict[str, object]:
+    delivered_at = request.delivered_at or datetime.now(timezone.utc)
+    certificate = insert_delivery_certificate(
+        shipment_id=request.shipment_id.strip() or "UNASSIGNED",
+        recipient_reference=request.recipient_reference.strip() or "UNKNOWN_RECIPIENT",
+        condition_summary=request.condition_summary.strip() or "received",
+        delivered_at=delivered_at.isoformat(),
+    )
+    return certificate_payload(certificate)
+
+
+@app.get("/delivery-certificates/{certificate_id}", response_model=DeliveryCertificateResponse)
+def delivery_certificate_detail(certificate_id: int) -> dict[str, object]:
+    certificate = get_delivery_certificate(certificate_id)
+    if certificate is None:
+        raise HTTPException(status_code=404, detail="Delivery certificate not found")
+    return certificate_payload(certificate)
+
+
+@app.get("/delivery-certificates/{certificate_id}/blockchain", response_model=DeliveryCertificatePayload)
+def delivery_certificate_blockchain_payload(certificate_id: int) -> dict[str, object]:
+    certificate = get_delivery_certificate(certificate_id)
+    if certificate is None:
+        raise HTTPException(status_code=404, detail="Delivery certificate not found")
+    return certificate_blockchain_payload(certificate)
+
+
+@app.post("/delivery-certificates/{certificate_id}/blockchain/issue", response_model=BlockchainTransactionResponse)
+def issue_delivery_certificate_on_chain(certificate_id: int) -> dict[str, object]:
+    payload = delivery_certificate_blockchain_payload(certificate_id)
+    try:
+        tx_hash = send_delivery_certificate(payload)
+    except BlockchainNotConfigured as exc:
+        return {
+            "status": "not_configured",
+            "tx_hash": None,
+            "message": str(exc),
+            "payload": payload,
+        }
+    except Exception as exc:
+        update_certificate_blockchain_status(certificate_id, status="failed", tx_hash=None)
+        return {
+            "status": "failed",
+            "tx_hash": None,
+            "message": str(exc),
+            "payload": payload,
+        }
+
+    update_certificate_blockchain_status(certificate_id, status="submitted", tx_hash=tx_hash)
+    return {
+        "status": "submitted",
+        "tx_hash": tx_hash,
+        "message": "Delivery certificate transaction submitted.",
+        "payload": payload,
+    }
+
+
 async def save_upload(image: UploadFile) -> Path:
     original_name = Path(image.filename or "upload.jpg").name
     extension = Path(original_name).suffix.lower()
@@ -192,6 +263,35 @@ def report_payload(report: dict[str, object]) -> dict[str, object]:
         "blockchain_error": report.get("blockchain_error"),
         "image_path": report["image_path"],
         "timestamp": report["created_at"],
+    }
+
+
+def certificate_payload(certificate: dict[str, object]) -> dict[str, object]:
+    return {
+        "id": certificate["id"],
+        "shipment_id": certificate["shipment_id"],
+        "recipient_reference": certificate["recipient_reference"],
+        "condition_summary": certificate["condition_summary"],
+        "delivered_at": certificate["delivered_at"],
+        "shipment_hash": certificate["shipment_hash"],
+        "certificate_hash": certificate["certificate_hash"],
+        "recipient_hash": certificate["recipient_hash"],
+        "condition_hash": certificate["condition_hash"],
+        "delivered_at_unix": certificate["delivered_at_unix"],
+        "blockchain_tx_hash": certificate.get("blockchain_tx_hash"),
+        "blockchain_status": certificate.get("blockchain_status") or "not_submitted",
+    }
+
+
+def certificate_blockchain_payload(certificate: dict[str, object]) -> dict[str, object]:
+    return {
+        "certificate_id": certificate["id"],
+        "contract_function": "issueDeliveryCertificate",
+        "shipment_hash": certificate["shipment_hash"],
+        "certificate_hash": certificate["certificate_hash"],
+        "recipient_hash": certificate["recipient_hash"],
+        "condition_hash": certificate["condition_hash"],
+        "delivered_at_unix": certificate["delivered_at_unix"],
     }
 
 
