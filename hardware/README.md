@@ -170,10 +170,4 @@ python3 inspect.py
 ## Author
 
 **Muhammad Hafiz bin Kamaruddin**
-Radiation Protection Officer - Billion Prima Technologies Sdn Bhd
 
----
-
-## License
-
-Released under the MIT License.
