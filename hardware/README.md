@@ -134,7 +134,7 @@ See [parcel_defect_camera_pcb_layout.pdf](parcel_defect_camera_pcb_layout.pdf) f
 sudo raspi-config        # Interface Options -> enable Camera
 
 # Clone and set up
-git clone https://github.com/<your-username>/parcel-defect-detection.git
+git clone https://github.com/<hafizkwar>/parcel-defect-detection.git
 cd parcel-defect-detection
 pip install -r requirements.txt
 
