@@ -1,5 +1,9 @@
 # TrustRoute.Ai
 
+<p align="center">
+  <img src="images/trustroute-logo.png" alt="TrustRoute.Ai logo" width="180">
+</p>
+
 TrustRoute.Ai is an image-first delivery defect detection MVP for logistics workflows. It analyzes delivered goods such as parcels, vehicles, and other shipment items, stores the report in the backend, and can anchor compact proof data to an Ethereum Sepolia smart contract.
 
 The current MVP uses still images. The planned hardware flow is a Raspberry Pi with an HD camera that first sends captured images to the backend, then later upgrades to video streaming by sampling frames from the camera feed.
@@ -13,6 +17,36 @@ The current MVP uses still images. The planned hardware flow is a Raspberry Pi w
 - Optionally anchor important report details to Sepolia.
 - Issue delivery certificates when the recipient receives the goods.
 - Show defect history and blockchain status in the app dashboard.
+
+## Screenshots
+
+### System Architecture
+
+![TrustRoute.Ai architecture](images/Architecture.jpeg)
+
+### Mobile App Flow
+
+| Login | Dashboard | Defect History | History Detail |
+| --- | --- | --- | --- |
+| <img src="images/1.%20login.png" alt="Login screen" width="220"> | <img src="images/2.%20dashboard.png" alt="Dashboard screen" width="220"> | <img src="images/3.%20history_list.png" alt="Defect history screen" width="220"> | <img src="images/3.1%20defect_details.png" alt="Defect history detail screen" width="220"> |
+
+| Report Defect | Defect Detected | Defect Details |
+| --- | --- | --- |
+| <img src="images/6.%20report_defect.png" alt="Report defect upload screen" width="260"> | <img src="images/7.%20defect_cracked.png" alt="AI defect detection result" width="260"> | <img src="images/8.%20defect_cracked_details.png" alt="Defect details and blockchain evidence hashes" width="260"> |
+
+| Normal Result | Normal Details | Profile |
+| --- | --- | --- |
+| <img src="images/9.%20defect_normal.png" alt="Normal condition AI result" width="260"> | <img src="images/10.%20defect_normal_details.png" alt="Normal condition details" width="260"> | <img src="images/profile.png" alt="Profile screen" width="260"> |
+
+### Monitoring And Blockchain Evidence
+
+| Route Map | Damage Alert | Blockchain Evidence |
+| --- | --- | --- |
+| <img src="images/4.%20route_map.png" alt="Live route map" width="260"> | <img src="images/5.%20damage_alert.png" alt="Damage alert on live monitoring map" width="260"> | <img src="images/11.%20blockchain_evidence.png" alt="Blockchain evidence timeline" width="260"> |
+
+### Sepolia Explorer Verification
+
+<img src="images/12.%20blockchain_explorer_verification.png" alt="Sepolia Etherscan transaction verification" width="360">
 
 ## Repository Structure
 
